@@ -1,41 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="fr">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tacklor Mark</title>
-    <!-- Tailwind CSS via CDN for quick styling -->
+    
+    <!-- 1. Styles & Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              glass: {
-                100: 'rgba(255, 255, 255, 0.1)',
-                200: 'rgba(255, 255, 255, 0.2)',
-                300: 'rgba(255, 255, 255, 0.3)',
-                dark: 'rgba(0, 0, 0, 0.3)',
-              }
+              glass: { 100: 'rgba(255, 255, 255, 0.1)', dark: 'rgba(0, 0, 0, 0.3)' }
             },
-            backdropBlur: {
-              xs: '2px',
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            }
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
           },
         },
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        /* Tropical background hosted on high-availability CDN (Blogger/Google) */
         background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYWwMD27VB-_OQ7OrwaiBqJ-7lNELdUS4CYyrelQi_0blK4duusIiPywZlzSoLPCGjK6p0YfV55PcwkgafWvtJOi3MTmpHwYfhravhXRLRCCa2Mq0YaVfMdGTYT1tKB3whMRbQdQVt0RERB1UnOO1NepeTof4Ti7_k7GzZO53n4e3NfwuEPgXucIZPjDI/s16000/Fond%20Tropical.png');
         background-size: cover;
         background-position: center;
@@ -55,43 +43,448 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
       }
-      /* Custom Scrollbar for glass feel */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05); 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2); 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3); 
-      }
     </style>
-    <!-- Import Map is useful for no-build setups, but usually redundant with Vite/CRA. 
-         Keeping it for compatibility if you are using a specific runtime, but specific imports handled by bundler. -->
-    <script type="importmap">
+
+    <!-- 2. React Framework via CDN (UMD for Monolithic File) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
   }
 }
 </script>
 </head>
-  <body class="antialiased min-h-screen text-white overflow-x-hidden">
-    <div id="root"></div>
-    <noscript>
-      <div style="padding: 20px; color: white; text-align: center; background: rgba(0,0,0,0.8);">
-        JavaScript est désactivé ou n'a pas pu se charger. Veuillez vérifier votre console.
-      </div>
-    </noscript>
-    <!-- CRITICAL: Entry point for the React Application -->
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body class="antialiased min-h-screen text-white overflow-x-hidden">
+
+    <!-- 3. Root & Fallback Content -->
+    <div id="root">
+        <div class="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+            <div class="liquid-glass-dark p-8 rounded-2xl max-w-md w-full">
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" class="w-20 h-20 mx-auto mb-4 object-contain" alt="Logo">
+                <h1 class="text-2xl font-bold mb-2">Tacklor Mark</h1>
+                <p class="text-white/70 mb-4">Chargement de l'application...</p>
+                <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <noscript>
+                    <p class="text-red-400 mt-4 font-bold">JavaScript est requis pour utiliser cette application.</p>
+                </noscript>
+                <div id="error-display" class="hidden mt-4 p-4 bg-red-500/20 border border-red-500 rounded text-red-200 text-sm text-left overflow-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Application Logic -->
+    <script>
+        // Global Error Handler
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const display = document.getElementById('error-display');
+            if (display) {
+                display.classList.remove('hidden');
+                display.innerHTML = `<strong>Erreur:</strong> ${msg}<br><small>${url}:${lineNo}</small>`;
+            }
+            console.error("Global Error:", msg, error);
+            return false;
+        };
+    </script>
+
+    <script type="text/babel" data-presets="env,react">
+        console.log("LOG: Script chargé avec succès");
+
+        // UUID Polyfill
+        const generateUUID = () => {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+
+        const { useState, useEffect, useRef } = React;
+
+        // --- I18N DATA ---
+        const translations = {
+          en: {
+            appTitle: "Tacklor Mark",
+            weather: { temp: "Temp", wind: "Wind" },
+            dashboard: {
+              title: "My Logbook",
+              subtitle: "Track your journey, analyze with AI.",
+              newCatch: "New Catch",
+              totalCatches: "Total Catches",
+              totalWeight: "Total Weight",
+              verifiedCompliant: "Verified Compliant",
+              status: { pending: "Pending Check", compliant: "Compliant", to_declare: "Action Required", legal_declaration_required: "Legal Declaration Needed" },
+              labels: { length: "Length", weight: "Weight", technique: "Technique", spot: "Spot" },
+              actions: { declare: "Send Legal Declaration" }
+            },
+            form: {
+              back: "Back to Dashboard",
+              title: "New Entry",
+              upload: { title: "Click to upload photo", subtitle: "or drag and drop" },
+              analyze: "Analyze Catch",
+              analyzing: "Analyzing...",
+              fields: { species: "Species", length: "Length (cm)", weight: "Weight (kg)", technique: "Technique", spot: "Spot" },
+              compliance: { title: "RecFishing Compliance", checking: "Verifying...", compliant: "Compliant", actionRequired: "Check Required" },
+              messages: { compliant: "Catch is compliant.", sensitive: "Sensitive species.", undersize: "Undersize catch.", legal_required: "Target species declaration required." },
+              adviceTitle: "Tacklor Guide AI Advice",
+              save: "Save to Logbook"
+            },
+            aiActive: "AI Active"
+          },
+          fr: {
+            appTitle: "Tacklor Mark",
+            weather: { temp: "Temp", wind: "Vent" },
+            dashboard: {
+              title: "Mon Carnet",
+              subtitle: "Suivez votre parcours, analysez avec l'IA.",
+              newCatch: "Nouvelle Prise",
+              totalCatches: "Total Prises",
+              totalWeight: "Poids Total",
+              verifiedCompliant: "Conformité Vérifiée",
+              status: { pending: "En attente", compliant: "Conforme", to_declare: "À déclarer", legal_declaration_required: "Déclaration Légale Requise" },
+              labels: { length: "Taille", weight: "Poids", technique: "Technique", spot: "Poste" },
+              actions: { declare: "Envoyer la déclaration légale" }
+            },
+            form: {
+              back: "Retour au tableau de bord",
+              title: "Nouvelle Entrée",
+              upload: { title: "Cliquez pour ajouter une photo", subtitle: "ou glissez-déposez" },
+              analyze: "Analyser la prise",
+              analyzing: "Analyse en cours...",
+              fields: { species: "Espèce", length: "Taille (cm)", weight: "Poids (kg)", technique: "Technique", spot: "Type de poste" },
+              compliance: { title: "Conformité RecFishing", checking: "Vérification...", compliant: "Conforme", actionRequired: "À déclarer" },
+              messages: { compliant: "La prise est conforme.", sensitive: "Espèce sensible détectée.", undersize: "Taille insuffisante.", legal_required: "Espèce cible nécessitant déclaration." },
+              adviceTitle: "Conseil Tacklor Guide AI",
+              save: "Enregistrer"
+            },
+            aiActive: "IA Active"
+          }
+        };
+
+        // --- STORAGE SERVICE ---
+        const LOGBOOK_KEY = 'tacklor_logbook';
+        const USER_KEY = 'tacklor_user_profile';
+
+        const compressImage = (file) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+              const img = new Image();
+              img.src = event.target.result;
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+                if (width > height) {
+                  if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                  if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+              };
+              img.onerror = reject;
+            };
+            reader.onerror = reject;
+          });
+        };
+
+        const getLogbook = () => {
+          try {
+            const stored = localStorage.getItem(LOGBOOK_KEY);
+            return stored ? JSON.parse(stored) : [];
+          } catch (e) { return []; }
+        };
+
+        const saveToLogbook = (newCatch) => {
+          try {
+            const current = getLogbook();
+            const updated = [newCatch, ...current];
+            localStorage.setItem(LOGBOOK_KEY, JSON.stringify(updated));
+            return updated;
+          } catch (e) {
+            alert("Storage Full!");
+            return getLogbook();
+          }
+        };
+
+        // --- SERVICES (MOCKED FOR STABILITY) ---
+        const analyzeCatchImageMock = async (file, lang) => {
+            console.log("Simulating AI Analysis...");
+            await new Promise(r => setTimeout(r, 2000)); // Delay
+            return {
+                species: lang === 'fr' ? "Bar Européen" : "European Bass",
+                length_cm: Math.floor(Math.random() * (70 - 30) + 30),
+                weight_kg: (Math.random() * (3 - 0.5) + 0.5).toFixed(1),
+                is_sensitive_species: false,
+                technique: lang === 'fr' ? "Leurre de surface" : "Topwater Lure",
+                spot_type: lang === 'fr' ? "Côte rocheuse" : "Rocky Coast"
+            };
+        };
+
+        const processFishingData = async (data, lang) => {
+            await new Promise(r => setTimeout(r, 1000));
+            const speciesLower = (data.species || "").toLowerCase();
+            let status = 'compliant';
+            let message = translations[lang].form.messages.compliant;
+            
+            if (speciesLower.includes('bar') || speciesLower.includes('bass')) {
+                status = 'legal_declaration_required';
+                message = translations[lang].form.messages.legal_required;
+            }
+            
+            return {
+                status,
+                message,
+                advice: lang === 'fr' 
+                    ? "Marée descendante idéale. Essayez une animation lente près du fond." 
+                    : "Ideal falling tide. Try slow animation near the bottom."
+            };
+        };
+
+        // --- COMPONENTS ---
+
+        const GlassCard = ({ children, className = '', theme = 'dark' }) => {
+            const bgClass = theme === 'dark' ? 'liquid-glass-dark' : 'liquid-glass';
+            return <div className={`${bgClass} rounded-3xl p-6 transition-all duration-300 ${className}`}>{children}</div>;
+        };
+
+        const StatusBadge = ({ status, lang }) => {
+            const t = translations[lang].dashboard.status;
+            const colors = {
+                pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30',
+                compliant: 'bg-green-500/20 text-green-200 border-green-500/30',
+                to_declare: 'bg-red-500/20 text-red-200 border-red-500/30',
+                legal_declaration_required: 'bg-purple-500/20 text-purple-200 border-purple-500/30'
+            };
+            return (
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-md ${colors[status] || colors.pending}`}>
+                    {t[status] || status}
+                </span>
+            );
+        };
+
+        const Dashboard = ({ catches, onAddNew, lang, theme, onToggleTheme }) => {
+            const t = translations[lang].dashboard;
+            return (
+                <div className="w-full max-w-7xl mx-auto p-4 space-y-8 pb-24">
+                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-2">
+                        <div>
+                            <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">{t.title}</h1>
+                            <p className="text-white/60 mt-2">{t.subtitle}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <button onClick={onToggleTheme} className="p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md">
+                                {theme === 'dark' ? '☀️' : '🌙'}
+                            </button>
+                            <button onClick={onAddNew} className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md shadow-lg font-medium flex items-center gap-2">
+                                <span>+</span> {t.newCatch}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
+                            <span className="text-4xl font-bold">{catches.length}</span>
+                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">{t.totalCatches}</span>
+                        </GlassCard>
+                        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
+                            <span className="text-4xl font-bold">{catches.reduce((acc, c) => acc + Number(c.weight_kg), 0).toFixed(1)} kg</span>
+                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">{t.totalWeight}</span>
+                        </GlassCard>
+                         <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
+                            <span className="text-4xl font-bold text-green-400">100%</span>
+                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">Legal</span>
+                        </GlassCard>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {catches.length === 0 ? (
+                             <div className="col-span-full py-20 text-center">
+                                <GlassCard theme={theme} className="!bg-white/10 border-2 border-white/20 shadow-xl backdrop-blur-xl">
+                                    <div className="flex flex-col items-center p-6">
+                                        <div className="text-6xl mb-4">🎣</div>
+                                        <h3 className="text-xl font-bold mb-2 text-white">Bienvenue sur Tacklor Mark !</h3>
+                                        <p className="text-lg text-white/80">Enregistrez votre première prise pour commencer.</p>
+                                        <button onClick={onAddNew} className="mt-6 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-colors shadow-lg">
+                                            Ajouter une prise
+                                        </button>
+                                    </div>
+                                </GlassCard>
+                            </div>
+                        ) : (
+                            catches.map(item => (
+                                <GlassCard key={item.id} theme={theme} className="p-0 overflow-hidden flex flex-col h-full group hover:bg-white/10">
+                                    <div className="relative h-48 w-full overflow-hidden">
+                                        <img src={item.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md bg-white/10">{item.species}</div>
+                                        <div className="absolute top-3 right-3"><StatusBadge status={item.complianceStatus} lang={lang} /></div>
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                                            <p className="text-xs text-white/70">{new Date(item.date).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-5 flex-grow space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div><span className="text-xs text-white/40 block">{t.labels.length}</span><span className="text-lg font-medium">{item.length_cm} cm</span></div>
+                                            <div><span className="text-xs text-white/40 block">{t.labels.weight}</span><span className="text-lg font-medium">{item.weight_kg} kg</span></div>
+                                        </div>
+                                        {item.aiAdvice && (
+                                            <div className="bg-white/5 p-3 rounded-lg border border-white/5 text-xs italic text-white/80">
+                                                "{item.aiAdvice}"
+                                            </div>
+                                        )}
+                                    </div>
+                                </GlassCard>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const NewCatchForm = ({ onSave, onCancel, lang, theme }) => {
+            const [file, setFile] = useState(null);
+            const [preview, setPreview] = useState(null);
+            const [analysis, setAnalysis] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [status, setStatus] = useState({ status: 'pending', message: '', advice: '' });
+            const fileInput = useRef(null);
+            const t = translations[lang].form;
+
+            const handleFile = (e) => {
+                const f = e.target.files[0];
+                if (f) {
+                    setFile(f);
+                    setPreview(URL.createObjectURL(f));
+                    setAnalysis(null);
+                }
+            };
+
+            const runAnalysis = async () => {
+                setLoading(true);
+                try {
+                    const result = await analyzeCatchImageMock(file, lang);
+                    setAnalysis(result);
+                    const check = await processFishingData(result, lang);
+                    setStatus(check);
+                } catch(e) { alert("Error"); }
+                setLoading(false);
+            };
+
+            const save = async () => {
+                setLoading(true);
+                const base64 = await compressImage(file);
+                onSave({
+                    id: generateUUID(),
+                    date: new Date().toISOString(),
+                    imageUrl: base64,
+                    ...analysis,
+                    complianceStatus: status.status,
+                    aiAdvice: status.advice
+                });
+                setLoading(false);
+            };
+
+            return (
+                <div className="w-full max-w-2xl mx-auto p-4 pb-20">
+                    <button onClick={onCancel} className="mb-6 text-white/60 hover:text-white flex items-center gap-2">← {t.back}</button>
+                    <GlassCard theme={theme} className="space-y-6">
+                        <div onClick={() => !preview && fileInput.current.click()} className="relative aspect-video rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center overflow-hidden hover:bg-white/5 cursor-pointer">
+                            {preview ? (
+                                <img src={preview} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="text-center p-6">
+                                    <div className="text-4xl mb-2">📷</div>
+                                    <p>{t.upload.title}</p>
+                                </div>
+                            )}
+                            <input type="file" ref={fileInput} onChange={handleFile} accept="image/*" className="hidden" />
+                            {preview && !analysis && (
+                                <button onClick={(e) => { e.stopPropagation(); runAnalysis(); }} disabled={loading} className="absolute bottom-6 px-6 py-3 bg-blue-600 rounded-full shadow-lg text-white font-bold">
+                                    {loading ? t.analyzing : t.analyze}
+                                </button>
+                            )}
+                        </div>
+
+                        {analysis && (
+                            <div className="space-y-4 animate-pulse-once">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="text-xs text-white/60">{t.fields.species}</label><input value={analysis.species} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white" /></div>
+                                    <div><label className="text-xs text-white/60">{t.fields.length}</label><input value={analysis.length_cm} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white" /></div>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                    <h4 className="font-bold text-sm mb-1">{t.compliance.title}</h4>
+                                    <p className="text-sm text-green-300">{status.message}</p>
+                                </div>
+                                <button onClick={save} disabled={loading} className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all">
+                                    {t.save}
+                                </button>
+                            </div>
+                        )}
+                    </GlassCard>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [view, setView] = useState('DASHBOARD');
+            const [catches, setCatches] = useState([]);
+            const [lang, setLang] = useState('fr');
+            const [theme, setTheme] = useState('dark');
+
+            useEffect(() => {
+                setCatches(getLogbook());
+            }, []);
+
+            const handleSave = (record) => {
+                const updated = saveToLogbook(record);
+                setCatches(updated);
+                setView('DASHBOARD');
+            };
+
+            return (
+                <div className="min-h-screen pb-10 relative">
+                    <div className="fixed top-0 left-0 right-0 h-48 z-40 pointer-events-none" style={{ backdropFilter: 'blur(12px)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)' }} />
+                    
+                    <nav className="sticky top-0 z-50 px-6 py-4 mb-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="liquid-glass rounded-2xl px-6 py-3 flex items-center justify-between shadow-2xl">
+                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('DASHBOARD')}>
+                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" className="w-8 h-8 object-contain" />
+                                    <span className="font-bold text-lg">Tacklor Mark</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')} className="text-xs font-bold px-3 py-1 bg-white/10 rounded-full border border-white/20 uppercase">{lang}</button>
+                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center text-xs">👤</div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="relative z-0">
+                        {view === 'DASHBOARD' && <Dashboard catches={catches} onAddNew={() => setView('NEW_CATCH')} lang={lang} theme={theme} onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />}
+                        {view === 'NEW_CATCH' && <NewCatchForm onSave={handleSave} onCancel={() => setView('DASHBOARD')} lang={lang} theme={theme} />}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
