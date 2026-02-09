@@ -1,8 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CatchAnalysis, Language } from "../types";
 
-// Fonction utilitaire pour récupérer la clé API sans faire planter l'application
-// si 'process' n'est pas défini (cas fréquent sur Vercel/Vite côté navigateur)
+// Fonction utilitaire sécurisée pour récupérer la clé API
 const getApiKey = () => {
   try {
     // @ts-ignore
@@ -11,20 +10,34 @@ const getApiKey = () => {
       return process.env.API_KEY || '';
     }
   } catch (e) {
-    console.warn("Environnement process.env non détecté, utilisation de la clé vide.");
+    console.warn("Environnement process.env non détecté.");
   }
   return '';
 };
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+// Instance lazy-loaded pour éviter les erreurs top-level
+let aiInstance: GoogleGenAI | null = null;
+
+const getAiClient = (): GoogleGenAI | null => {
+  if (aiInstance) return aiInstance;
+  
+  const key = getApiKey();
+  if (!key) return null; // Retourne null si pas de clé, géré plus bas
+
+  try {
+    aiInstance = new GoogleGenAI({ apiKey: key });
+    return aiInstance;
+  } catch (error) {
+    console.error("Erreur lors de l'initialisation du client Gemini:", error);
+    return null;
+  }
+};
 
 const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
-      // Remove data url prefix (e.g. "data:image/jpeg;base64,")
       const base64Data = base64String.split(',')[1];
       resolve({
         inlineData: {
@@ -39,14 +52,15 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
 };
 
 export const analyzeCatchImage = async (file: File, lang: Language = 'fr'): Promise<CatchAnalysis> => {
-  const apiKey = getApiKey();
+  // Initialisation à la demande (Lazy)
+  const ai = getAiClient();
   
-  if (!apiKey) {
-    console.warn("No API KEY found. Returning mock data.");
-    // Simulate delay for mock
+  // Si le client n'est pas dispo (pas de clé ou erreur init), on utilise les données mock
+  if (!ai) {
+    console.warn("Client Gemini non disponible (Clé API manquante ?). Utilisation des données de simulation.");
     await new Promise(r => setTimeout(r, 2000));
     return {
-      species: lang === 'fr' ? "Bar Européen" : "European Bass",
+      species: lang === 'fr' ? "Bar Européen (Simulation)" : "European Bass (Mock)",
       length_cm: 52,
       weight_kg: 2.1,
       is_sensitive_species: false,
@@ -99,7 +113,6 @@ export const analyzeCatchImage = async (file: File, lang: Language = 'fr'): Prom
 
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    // Fallback or re-throw
     throw error;
   }
 };

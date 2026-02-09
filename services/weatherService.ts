@@ -17,7 +17,7 @@ const getWMODescription = (code: number): string => {
 
 export const getCurrentLocation = (): Promise<GeolocationPosition> => {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
       reject(new Error("Géolocalisation non supportée"));
       return;
     }
@@ -41,6 +41,12 @@ export const fetchCurrentWeather = async (): Promise<WeatherData | null> => {
     if (!response.ok) throw new Error("Erreur Open-Meteo");
 
     const data = await response.json();
+    
+    // Vérification de la structure des données avant accès
+    if (!data || !data.current) {
+        throw new Error("Données météo incomplètes");
+    }
+
     return {
       temp: data.current.temperature_2m,
       wind: data.current.wind_speed_10m,
@@ -51,7 +57,8 @@ export const fetchCurrentWeather = async (): Promise<WeatherData | null> => {
       lon: longitude
     };
   } catch (error) {
-    console.error("Météo erreur:", error);
+    // Log silencieux pour ne pas spammer la console en production si l'utilisateur refuse la geoloc
+    console.warn("Météo indisponible:", error);
     return null;
   }
 };
