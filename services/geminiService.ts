@@ -1,8 +1,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CatchAnalysis, Language } from "../types";
 
+// Fonction utilitaire pour récupérer la clé API sans faire planter l'application
+// si 'process' n'est pas défini (cas fréquent sur Vercel/Vite côté navigateur)
+const getApiKey = () => {
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env) {
+      // @ts-ignore
+      return process.env.API_KEY || '';
+    }
+  } catch (e) {
+    console.warn("Environnement process.env non détecté, utilisation de la clé vide.");
+  }
+  return '';
+};
+
 // Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
   return new Promise((resolve, reject) => {
@@ -24,7 +39,9 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
 };
 
 export const analyzeCatchImage = async (file: File, lang: Language = 'fr'): Promise<CatchAnalysis> => {
-  if (!process.env.API_KEY) {
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
     console.warn("No API KEY found. Returning mock data.");
     // Simulate delay for mock
     await new Promise(r => setTimeout(r, 2000));
