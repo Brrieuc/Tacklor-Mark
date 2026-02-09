@@ -6,6 +6,8 @@ import { translations } from './i18n';
 import { getLogbook, saveToLogbook, getUserProfile } from './services/storageService';
 
 export default function App() {
+  console.log("App Component: Initializing..."); // Debug Log
+
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
   
   // State initialization from empty, data loaded in useEffect
@@ -17,13 +19,22 @@ export default function App() {
 
   // Load Data on Mount
   useEffect(() => {
-    const loadedCatches = getLogbook();
-    const loadedProfile = getUserProfile();
-    setCatches(loadedCatches);
-    setUserProfile(loadedProfile);
+    console.log("App Component: useEffect mounted. Loading data from LocalStorage...");
+    try {
+      const loadedCatches = getLogbook();
+      const loadedProfile = getUserProfile();
+      
+      console.log("Data loaded:", { catchesCount: loadedCatches.length, profile: !!loadedProfile });
+      
+      setCatches(loadedCatches);
+      setUserProfile(loadedProfile);
+    } catch (error) {
+      console.error("App Component: Error loading data", error);
+    }
   }, []);
 
   const handleSaveNewCatch = (record: CatchRecord) => {
+    console.log("Saving new catch:", record.id);
     // Save to LocalStorage and update state with the returned array (to ensure sync)
     const updatedLogbook = saveToLogbook(record);
     setCatches(updatedLogbook);

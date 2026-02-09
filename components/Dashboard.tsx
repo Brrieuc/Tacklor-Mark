@@ -129,9 +129,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
       {/* Catches Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {catches.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-white/40">
-            <GlassCard theme={theme}>
-              <p className="text-lg">{t.emptyState}</p>
+          <div className="col-span-full py-20 text-center">
+            <GlassCard theme={theme} className="!bg-white/10 border-2 border-white/20 shadow-xl backdrop-blur-xl">
+              <div className="flex flex-col items-center p-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-blue-300 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <h3 className="text-xl font-bold mb-2 text-white">Bienvenue sur Tacklor Mark !</h3>
+                <p className="text-lg text-white/80">Enregistrez votre première prise pour commencer l'aventure.</p>
+                <button 
+                    onClick={onAddNew}
+                    className="mt-6 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-colors shadow-lg"
+                >
+                    Ajouter une prise
+                </button>
+              </div>
             </GlassCard>
           </div>
         ) : (

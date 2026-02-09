@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tacklor Mark</title>
+    <!-- Tailwind CSS via CDN for quick styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -34,7 +35,7 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        /* Tropical background */
+        /* Tropical background hosted on high-availability CDN (Blogger/Google) */
         background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYWwMD27VB-_OQ7OrwaiBqJ-7lNELdUS4CYyrelQi_0blK4duusIiPywZlzSoLPCGjK6p0YfV55PcwkgafWvtJOi3MTmpHwYfhravhXRLRCCa2Mq0YaVfMdGTYT1tKB3whMRbQdQVt0RERB1UnOO1NepeTof4Ti7_k7GzZO53n4e3NfwuEPgXucIZPjDI/s16000/Fond%20Tropical.png');
         background-size: cover;
         background-position: center;
@@ -69,18 +70,28 @@
         background: rgba(255, 255, 255, 0.3); 
       }
     </style>
-  <script type="importmap">
+    <!-- Import Map is useful for no-build setups, but usually redundant with Vite/CRA. 
+         Keeping it for compatibility if you are using a specific runtime, but specific imports handled by bundler. -->
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
 </head>
   <body class="antialiased min-h-screen text-white overflow-x-hidden">
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 20px; color: white; text-align: center; background: rgba(0,0,0,0.8);">
+        JavaScript est désactivé ou n'a pas pu se charger. Veuillez vérifier votre console.
+      </div>
+    </noscript>
+    <!-- CRITICAL: Entry point for the React Application -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
