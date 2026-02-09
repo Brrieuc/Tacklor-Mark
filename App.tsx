@@ -1,58 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
-import { CatchRecord, ViewState, Language, Theme } from './types';
+import { CatchRecord, ViewState, Language, Theme, UserProfile } from './types';
 import { translations } from './i18n';
-
-// Initial Mock Data
-const INITIAL_DATA: CatchRecord[] = [
-  {
-    id: '1',
-    date: '2023-10-15T08:30:00Z',
-    species: 'Rainbow Trout',
-    length_cm: 45,
-    weight_kg: 1.8,
-    is_sensitive_species: false,
-    complianceStatus: 'compliant',
-    imageUrl: 'https://images.unsplash.com/photo-1599488615731-7e51281901dd?q=80&w=800&auto=format&fit=crop',
-    technique: 'Fly Fishing',
-    spot_type: 'Mountain River',
-    aiAdvice: 'Great catch! Early morning hatches are key here.'
-  },
-  {
-    id: '2',
-    date: '2023-10-14T14:15:00Z',
-    species: 'Bar Européen',
-    length_cm: 82,
-    weight_kg: 4.5,
-    is_sensitive_species: false,
-    complianceStatus: 'legal_declaration_required',
-    imageUrl: 'https://images.unsplash.com/photo-1582239634563-0d257211a7a0?q=80&w=800&auto=format&fit=crop',
-    technique: 'Surfcasting',
-    spot_type: 'Atlantic Coast',
-    aiAdvice: 'Huge Bass! Tide movement was likely the trigger.'
-  }
-];
+import { getLogbook, saveToLogbook, getUserProfile } from './services/storageService';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
-  const [catches, setCatches] = useState<CatchRecord[]>(INITIAL_DATA);
+  
+  // State initialization from empty, data loaded in useEffect
+  const [catches, setCatches] = useState<CatchRecord[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  
   const [lang, setLang] = useState<Language>('fr');
   const [theme, setTheme] = useState<Theme>('dark');
 
+  // Load Data on Mount
+  useEffect(() => {
+    const loadedCatches = getLogbook();
+    const loadedProfile = getUserProfile();
+    setCatches(loadedCatches);
+    setUserProfile(loadedProfile);
+  }, []);
+
   const handleSaveNewCatch = (record: CatchRecord) => {
-    setCatches([record, ...catches]);
+    // Save to LocalStorage and update state with the returned array (to ensure sync)
+    const updatedLogbook = saveToLogbook(record);
+    setCatches(updatedLogbook);
     setView(ViewState.DASHBOARD);
   };
 
   const t = translations[lang];
 
   return (
-    <div className="min-h-screen pb-10">
+    <div className="min-h-screen pb-10 relative">
+      {/* Progressive Blur Overlay for scrolling effect */}
+      <div 
+        className="fixed top-0 left-0 right-0 h-48 z-40 pointer-events-none"
+        style={{
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)'
+        }}
+      />
+
       {/* Navigation Bar */}
       <nav className="sticky top-0 z-50 px-6 py-4 mb-6">
         <div className="max-w-7xl mx-auto">
-          <div className={`rounded-2xl px-6 py-3 flex items-center justify-between ${theme === 'dark' ? 'liquid-glass' : 'liquid-glass bg-white/40'}`}>
+          <div className={`rounded-2xl px-6 py-3 flex items-center justify-between shadow-2xl ${theme === 'dark' ? 'liquid-glass' : 'liquid-glass bg-white/40'}`}>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView(ViewState.DASHBOARD)}>
                <img 
                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" 
@@ -74,16 +70,20 @@ export default function App() {
                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                  {t.aiActive}
                </div>
-               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20">
-                 <img src="https://picsum.photos/100/100" alt="User" className="w-full h-full object-cover" />
-               </div>
+               
+               {/* User Profile Display */}
+               {userProfile && (
+                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20">
+                   <img src={userProfile.avatarUrl} alt={userProfile.name} className="w-full h-full object-cover" />
+                 </div>
+               )}
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="transition-all duration-500 ease-in-out">
+      <main className="transition-all duration-500 ease-in-out relative z-0">
         {view === ViewState.DASHBOARD && (
           <Dashboard 
             catches={catches} 

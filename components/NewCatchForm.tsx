@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { analyzeCatchImage } from '../services/geminiService';
 import { processFishingData, ProcessingResult } from '../services/recFishingService';
+import { compressImage } from '../services/storageService';
 import { CatchAnalysis, CatchRecord, Language, Theme } from '../types';
 import { translations } from '../i18n';
 
@@ -17,6 +18,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // State for compression/save process
+  
   const [analysis, setAnalysis] = useState<CatchAnalysis | null>(null);
   const [complianceStatus, setComplianceStatus] = useState<CatchRecord['complianceStatus']>('pending');
   const [complianceMessage, setComplianceMessage] = useState<string>('');
@@ -77,18 +80,28 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     }
   };
 
-  const handleSave = () => {
-    if (!analysis || !previewUrl) return;
+  const handleSave = async () => {
+    if (!analysis || !file) return;
 
-    const newRecord: CatchRecord = {
-      ...analysis,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      imageUrl: previewUrl, 
-      complianceStatus: complianceStatus,
-      aiAdvice: aiAdvice
-    };
-    onSave(newRecord);
+    setIsSaving(true);
+    try {
+        // Compress image before saving to LocalStorage
+        const compressedImageBase64 = await compressImage(file);
+
+        const newRecord: CatchRecord = {
+          ...analysis,
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          imageUrl: compressedImageBase64, // Store Base64 instead of Blob URL
+          complianceStatus: complianceStatus,
+          aiAdvice: aiAdvice
+        };
+        onSave(newRecord);
+    } catch (error) {
+        console.error("Error preparing save:", error);
+        alert("Erreur lors de la sauvegarde de l'image.");
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -279,9 +292,10 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             {/* Save Button */}
             <button 
               onClick={handleSave}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5"
+              disabled={isSaving}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t.save}
+              {isSaving ? "Sauvegarde..." : t.save}
             </button>
           </div>
         )}

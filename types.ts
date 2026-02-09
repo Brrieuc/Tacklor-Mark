@@ -10,10 +10,15 @@ export interface CatchAnalysis {
 export interface CatchRecord extends CatchAnalysis {
   id: string;
   date: string;
-  imageUrl: string;
+  imageUrl: string; // Stockera désormais une chaîne Base64 compressée
   complianceStatus: 'pending' | 'compliant' | 'to_declare' | 'legal_declaration_required';
   location?: string;
   aiAdvice?: string; // Conseil du Tacklor Guide AI
+}
+
+export interface UserProfile {
+  name: string;
+  avatarUrl: string;
 }
 
 export enum ViewState {
