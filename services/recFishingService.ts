@@ -63,9 +63,3 @@ export const processFishingData = async (catchData: Partial<CatchRecord>, lang: 
     advice
   };
 };
-
-// Deprecated alias for backward compatibility if needed, but we use processFishingData now
-export const syncToRecFishing = async (catchData: CatchRecord, lang: Language = 'fr') => {
-    const result = await processFishingData(catchData, lang);
-    return { status: result.status, message: result.message };
-};

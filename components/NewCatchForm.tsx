@@ -3,7 +3,7 @@ import { GlassCard } from './GlassCard';
 import { analyzeCatchImage } from '../services/geminiService';
 import { processFishingData, ProcessingResult } from '../services/recFishingService';
 import { compressImage } from '../services/storageService';
-import { CatchAnalysis, CatchRecord, Language, Theme } from '../types';
+import { CatchAnalysis, CatchRecord, Language, Theme, WeatherData } from '../types';
 import { translations } from '../i18n';
 
 interface NewCatchFormProps {
@@ -11,25 +11,43 @@ interface NewCatchFormProps {
   onCancel: () => void;
   lang: Language;
   theme: Theme;
+  weather: WeatherData | null;
 }
 
-export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme }) => {
+export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather }) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // State for compression/save process
+  const [isSaving, setIsSaving] = useState(false); 
   
   const [analysis, setAnalysis] = useState<CatchAnalysis | null>(null);
   const [complianceStatus, setComplianceStatus] = useState<CatchRecord['complianceStatus']>('pending');
   const [complianceMessage, setComplianceMessage] = useState<string>('');
   const [aiAdvice, setAiAdvice] = useState<string>('');
+
+  // Additional fields state
+  const [manualTechnique, setManualTechnique] = useState('');
+  const [manualSpot, setManualSpot] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const t = translations[lang].form;
+  
+  // Style harmonisé : Texte blanc + Ombre portée adoucie
+  const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
+  const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
+  
+  // Inputs : Fond sombre semi-transparent pour que le texte blanc ressorte bien
+  const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
 
-  // Clean up object URL
+  // Auto-fill weather and GPS if available on mount
+  useEffect(() => {
+    if (weather) {
+        setManualSpot(`GPS: ${weather.lat.toFixed(4)}, ${weather.lon.toFixed(4)}`);
+    }
+  }, [weather]);
+
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -41,7 +59,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
-      setAnalysis(null); // Reset analysis on new file
+      setAnalysis(null);
       setComplianceStatus('pending');
       setComplianceMessage('');
       setAiAdvice('');
@@ -56,7 +74,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const result = await analyzeCatchImage(file, lang);
       setAnalysis(result);
       
-      // Auto-trigger compliance check after analysis
       handleRecFishingCheck(result);
 
     } catch (error) {
@@ -85,16 +102,20 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
     setIsSaving(true);
     try {
-        // Compress image before saving to LocalStorage
         const compressedImageBase64 = await compressImage(file);
+        
+        let finalSpot = analysis.spot_type || manualSpot;
 
         const newRecord: CatchRecord = {
           ...analysis,
+          technique: analysis.technique || manualTechnique,
+          spot_type: finalSpot,
           id: crypto.randomUUID(),
           date: new Date().toISOString(),
-          imageUrl: compressedImageBase64, // Store Base64 instead of Blob URL
+          imageUrl: compressedImageBase64,
           complianceStatus: complianceStatus,
-          aiAdvice: aiAdvice
+          aiAdvice: aiAdvice,
+          location: manualSpot // Store GPS coords
         };
         onSave(newRecord);
     } catch (error) {
@@ -107,19 +128,19 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   return (
     <div className="w-full max-w-2xl mx-auto p-4 pb-20">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onCancel} className="text-white/60 hover:text-white flex items-center gap-2 transition-colors">
+        <button onClick={onCancel} className={`flex items-center gap-2 transition-colors bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-white ${textShadowClass}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
           </svg>
-          {t.back}
+          <span className="font-medium">{t.back}</span>
         </button>
-        <h2 className="text-2xl font-bold">{t.title}</h2>
+        <h2 className={`text-2xl font-bold text-white bg-white/10 px-4 py-1 rounded-lg ${textShadowClass}`}>{t.title}</h2>
       </div>
 
       <GlassCard theme={theme} className="space-y-8">
         {/* Photo Upload Area */}
         <div 
-          className={`relative w-full aspect-video rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center overflow-hidden transition-all ${!previewUrl ? 'hover:bg-white/5 cursor-pointer' : ''}`}
+          className={`relative w-full aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all border-white/30 hover:bg-white/10 cursor-pointer`}
           onClick={() => !previewUrl && fileInputRef.current?.click()}
         >
           {previewUrl ? (
@@ -138,7 +159,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <button
                         onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
                         disabled={isAnalyzing}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-500/80 hover:bg-blue-600/80 text-white rounded-full backdrop-blur-md shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full backdrop-blur-md shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
                     >
                         {isAnalyzing ? (
                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -150,19 +171,19 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                                 <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                             </svg>
                         )}
-                        <span>{isAnalyzing ? t.analyzing : t.analyze}</span>
+                        <span className="font-bold">{isAnalyzing ? t.analyzing : t.analyze}</span>
                     </button>
                  </div>
               )}
             </>
           ) : (
-            <div className="text-center p-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white/40 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center p-6 text-white drop-shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <p className="text-lg font-medium">{t.upload.title}</p>
-              <p className="text-sm text-white/40">{t.upload.subtitle}</p>
+              <p className="text-lg font-bold">{t.upload.title}</p>
+              <p className="text-sm opacity-70">{t.upload.subtitle}</p>
             </div>
           )}
           <input 
@@ -179,81 +200,96 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           <div className="animate-fade-in space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white/60">{t.fields.species}</label>
+                <label className={labelClass}>{t.fields.species}</label>
                 <input 
                   type="text" 
                   value={analysis.species} 
                   onChange={(e) => setAnalysis({...analysis, species: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/60">{t.fields.length}</label>
+                    <label className={labelClass}>{t.fields.length}</label>
                     <input 
                       type="number" 
                       value={analysis.length_cm} 
                       onChange={(e) => setAnalysis({...analysis, length_cm: Number(e.target.value)})}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/60">{t.fields.weight}</label>
+                    <label className={labelClass}>{t.fields.weight}</label>
                     <input 
                       type="number" 
                       value={analysis.weight_kg} 
                       onChange={(e) => setAnalysis({...analysis, weight_kg: Number(e.target.value)})}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
                   </div>
               </div>
             </div>
 
-            {/* New Fields: Technique & Spot (Auto-filled by AI) */}
+            {/* Fields: Technique & Spot */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/60">{t.fields.technique}</label>
+                    <label className={labelClass}>{t.fields.technique}</label>
                     <input 
                       type="text" 
-                      value={analysis.technique || ''} 
-                      onChange={(e) => setAnalysis({...analysis, technique: e.target.value})}
+                      value={analysis.technique || manualTechnique} 
+                      onChange={(e) => {
+                          setAnalysis({...analysis, technique: e.target.value});
+                          setManualTechnique(e.target.value);
+                      }}
                       placeholder="e.g. Spinning, Surfcasting..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-white/60">{t.fields.spot}</label>
+                    <label className={labelClass}>{t.fields.spot}</label>
                     <input 
                       type="text" 
-                      value={analysis.spot_type || ''} 
-                      onChange={(e) => setAnalysis({...analysis, spot_type: e.target.value})}
+                      value={analysis.spot_type || manualSpot} 
+                      onChange={(e) => {
+                          setAnalysis({...analysis, spot_type: e.target.value});
+                          setManualSpot(e.target.value);
+                      }}
                       placeholder="e.g. River, Open Sea..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
+                    {weather && !analysis.spot_type && (
+                         <p className="text-xs text-green-300 mt-1 flex items-center gap-1 font-medium drop-shadow-sm">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                             </svg>
+                             Auto-detected: {weather.desc}
+                         </p>
+                    )}
                   </div>
              </div>
 
             {/* RecFishing Compliance Check */}
-            <div className="border-t border-white/10 pt-6">
+            <div className={`border-t pt-6 border-white/20`}>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                  <div>
-                    <h3 className="text-lg font-medium">{t.compliance.title}</h3>
-                    <p className="text-sm text-white/50">{t.compliance.subtitle}</p>
+                    <h3 className={`text-lg font-bold text-white ${textShadowClass}`}>{t.compliance.title}</h3>
+                    <p className={`text-sm text-white/70 ${textShadowClass}`}>{t.compliance.subtitle}</p>
                  </div>
                  
                  {isSyncing ? (
-                      <div className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium flex items-center gap-2">
+                      <div className="px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 bg-white/10 text-white">
                          <span>{t.compliance.checking}</span>
                       </div>
                  ) : (
                     <div className={`px-4 py-2 rounded-xl border flex items-center gap-3 ${
                         complianceStatus === 'compliant' 
-                        ? 'bg-green-500/10 border-green-500/20 text-green-200' 
+                        ? 'bg-green-500/20 border-green-500/30 text-green-200' 
                         : complianceStatus === 'legal_declaration_required'
-                        ? 'bg-purple-500/10 border-purple-500/20 text-purple-200'
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-200'
+                        ? 'bg-purple-500/20 border-purple-500/30 text-purple-200'
+                        : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-200'
                     }`}>
-                        <span className="font-medium capitalize">
+                        <span className="font-bold capitalize drop-shadow-sm">
                             {complianceStatus === 'compliant' ? t.compliance.compliant : 
                              complianceStatus === 'legal_declaration_required' ? t.compliance.actionRequired : 
                              t.compliance.actionRequired}
@@ -263,14 +299,14 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
               </div>
               
               {complianceMessage && (
-                  <div className="mt-3 text-sm text-white/60 bg-white/5 p-3 rounded-lg border border-white/5">
+                  <div className="mt-3 text-sm p-3 rounded-lg border bg-black/20 border-white/10 text-white/80">
                       {complianceMessage}
                   </div>
               )}
 
               {/* Specific Legal Button */}
               {complianceStatus === 'legal_declaration_required' && (
-                  <button className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg shadow-md transition-colors">
+                  <button className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg shadow-md transition-colors border border-white/20">
                       {t.compliance.actionRequired} (CERFA)
                   </button>
               )}
@@ -278,14 +314,14 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
             {/* Tacklor Guide AI Advice */}
             {aiAdvice && (
-                <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/20 rounded-xl p-4">
-                    <h3 className="text-sm font-bold text-blue-200 mb-2 flex items-center gap-2">
+                <div className="border rounded-xl p-4 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-500/20">
+                    <h3 className="text-sm font-bold mb-2 flex items-center gap-2 text-blue-200 drop-shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                         </svg>
                         {t.adviceTitle}
                     </h3>
-                    <p className="text-white/90 italic">"{aiAdvice}"</p>
+                    <p className="italic text-white/90">"{aiAdvice}"</p>
                 </div>
             )}
 
@@ -293,7 +329,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
             >
               {isSaving ? "Sauvegarde..." : t.save}
             </button>

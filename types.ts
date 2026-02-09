@@ -21,6 +21,16 @@ export interface UserProfile {
   avatarUrl: string;
 }
 
+export interface WeatherData {
+  temp: number;
+  wind: number;
+  pressure: number;
+  code: number;
+  desc: string;
+  lat: number;
+  lon: number;
+}
+
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   NEW_CATCH = 'NEW_CATCH',

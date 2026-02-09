@@ -1,5 +1,7 @@
 {
   "name": "Tacklor Mark",
   "description": "An intelligent, glass-morphic fishing logbook powered by Gemini AI for catch analysis and compliance checking.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }
