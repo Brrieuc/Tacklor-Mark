@@ -2,10 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tacklor Mark</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Tacklor Mark - Carnet de Pêche IA</title>
     
-    <!-- 1. Styles & Fonts -->
+    <!-- 1. Assets & Styles -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -13,39 +13,58 @@
         theme: {
           extend: {
             colors: {
-              glass: { 100: 'rgba(255, 255, 255, 0.1)', dark: 'rgba(0, 0, 0, 0.3)' }
+              glass: { 100: 'rgba(255, 255, 255, 0.1)', dark: 'rgba(0, 0, 0, 0.6)' },
+              brand: { main: '#3b82f6', accent: '#8b5cf6' }
             },
             fontFamily: { sans: ['Inter', 'sans-serif'] },
-            animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+            backdropBlur: { 'xs': '2px' }
           },
         },
       }
     </script>
     <style>
+      :root { --glass-border: rgba(255, 255, 255, 0.15); }
       body {
         font-family: 'Inter', sans-serif;
         background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYWwMD27VB-_OQ7OrwaiBqJ-7lNELdUS4CYyrelQi_0blK4duusIiPywZlzSoLPCGjK6p0YfV55PcwkgafWvtJOi3MTmpHwYfhravhXRLRCCa2Mq0YaVfMdGTYT1tKB3whMRbQdQVt0RERB1UnOO1NepeTof4Ti7_k7GzZO53n4e3NfwuEPgXucIZPjDI/s16000/Fond%20Tropical.png');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
       }
-      .liquid-glass {
-        background: rgba(255, 255, 255, 0.05);
+      
+      /* Glassmorphism Classes */
+      .glass-panel {
+        background: rgba(20, 20, 20, 0.6);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
       }
-      .liquid-glass-dark {
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+      .glass-card {
+        background: rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        transition: transform 0.2s ease, background 0.2s ease;
       }
+      .glass-input {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        transition: border-color 0.2s;
+      }
+      .glass-input:focus {
+        border-color: rgba(59, 130, 246, 0.6);
+        outline: none;
+      }
+
+      /* Utilities */
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    <!-- 2. React Framework via CDN (UMD for Monolithic File) -->
+    <!-- 2. React (UMD) & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -60,425 +79,546 @@
 }
 </script>
 </head>
-<body class="antialiased min-h-screen text-white overflow-x-hidden">
+<body class="antialiased min-h-screen text-gray-100 overflow-x-hidden selection:bg-blue-500/30">
 
-    <!-- 3. Root & Fallback Content -->
-    <div id="root">
-        <div class="min-h-screen flex flex-col items-center justify-center p-4 text-center">
-            <div class="liquid-glass-dark p-8 rounded-2xl max-w-md w-full">
-                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" class="w-20 h-20 mx-auto mb-4 object-contain" alt="Logo">
-                <h1 class="text-2xl font-bold mb-2">Tacklor Mark</h1>
-                <p class="text-white/70 mb-4">Chargement de l'application...</p>
-                <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <noscript>
-                    <p class="text-red-400 mt-4 font-bold">JavaScript est requis pour utiliser cette application.</p>
-                </noscript>
-                <div id="error-display" class="hidden mt-4 p-4 bg-red-500/20 border border-red-500 rounded text-red-200 text-sm text-left overflow-auto"></div>
-            </div>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <!-- 4. Application Logic -->
+    <!-- Error Handler -->
     <script>
-        // Global Error Handler
         window.onerror = function(msg, url, lineNo, columnNo, error) {
-            const display = document.getElementById('error-display');
-            if (display) {
-                display.classList.remove('hidden');
-                display.innerHTML = `<strong>Erreur:</strong> ${msg}<br><small>${url}:${lineNo}</small>`;
-            }
-            console.error("Global Error:", msg, error);
+            const root = document.getElementById('root');
+            if(root) root.innerHTML += `<div style="color:red; background:black; padding:20px; border:1px solid red; margin:20px;">CRITICAL ERROR: ${msg}</div>`;
             return false;
         };
     </script>
 
+    <!-- Application Logic -->
     <script type="text/babel" data-presets="env,react">
-        console.log("LOG: Script chargé avec succès");
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-        // UUID Polyfill
-        const generateUUID = () => {
-            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-                return crypto.randomUUID();
-            }
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
+        // ==========================================
+        // 1. CONSTANTS & CONFIG
+        // ==========================================
+        const CONFIG = {
+            STORAGE_KEYS: {
+                LOGBOOK: 'tacklor_logbook_v1',
+                API_KEY: 'tacklor_gemini_key',
+                THEME: 'tacklor_theme'
+            },
+            MAX_IMAGE_WIDTH: 800,
+            GEMINI_MODEL: 'gemini-2.0-flash-exp', // Using a fast, modern model
+            API_URL: 'https://generativelanguage.googleapis.com/v1beta/models'
         };
 
-        const { useState, useEffect, useRef } = React;
-
-        // --- I18N DATA ---
-        const translations = {
-          en: {
-            appTitle: "Tacklor Mark",
-            weather: { temp: "Temp", wind: "Wind" },
-            dashboard: {
-              title: "My Logbook",
-              subtitle: "Track your journey, analyze with AI.",
-              newCatch: "New Catch",
-              totalCatches: "Total Catches",
-              totalWeight: "Total Weight",
-              verifiedCompliant: "Verified Compliant",
-              status: { pending: "Pending Check", compliant: "Compliant", to_declare: "Action Required", legal_declaration_required: "Legal Declaration Needed" },
-              labels: { length: "Length", weight: "Weight", technique: "Technique", spot: "Spot" },
-              actions: { declare: "Send Legal Declaration" }
-            },
-            form: {
-              back: "Back to Dashboard",
-              title: "New Entry",
-              upload: { title: "Click to upload photo", subtitle: "or drag and drop" },
-              analyze: "Analyze Catch",
-              analyzing: "Analyzing...",
-              fields: { species: "Species", length: "Length (cm)", weight: "Weight (kg)", technique: "Technique", spot: "Spot" },
-              compliance: { title: "RecFishing Compliance", checking: "Verifying...", compliant: "Compliant", actionRequired: "Check Required" },
-              messages: { compliant: "Catch is compliant.", sensitive: "Sensitive species.", undersize: "Undersize catch.", legal_required: "Target species declaration required." },
-              adviceTitle: "Tacklor Guide AI Advice",
-              save: "Save to Logbook"
-            },
-            aiActive: "AI Active"
-          },
-          fr: {
-            appTitle: "Tacklor Mark",
-            weather: { temp: "Temp", wind: "Vent" },
-            dashboard: {
-              title: "Mon Carnet",
-              subtitle: "Suivez votre parcours, analysez avec l'IA.",
-              newCatch: "Nouvelle Prise",
-              totalCatches: "Total Prises",
-              totalWeight: "Poids Total",
-              verifiedCompliant: "Conformité Vérifiée",
-              status: { pending: "En attente", compliant: "Conforme", to_declare: "À déclarer", legal_declaration_required: "Déclaration Légale Requise" },
-              labels: { length: "Taille", weight: "Poids", technique: "Technique", spot: "Poste" },
-              actions: { declare: "Envoyer la déclaration légale" }
-            },
-            form: {
-              back: "Retour au tableau de bord",
-              title: "Nouvelle Entrée",
-              upload: { title: "Cliquez pour ajouter une photo", subtitle: "ou glissez-déposez" },
-              analyze: "Analyser la prise",
-              analyzing: "Analyse en cours...",
-              fields: { species: "Espèce", length: "Taille (cm)", weight: "Poids (kg)", technique: "Technique", spot: "Type de poste" },
-              compliance: { title: "Conformité RecFishing", checking: "Vérification...", compliant: "Conforme", actionRequired: "À déclarer" },
-              messages: { compliant: "La prise est conforme.", sensitive: "Espèce sensible détectée.", undersize: "Taille insuffisante.", legal_required: "Espèce cible nécessitant déclaration." },
-              adviceTitle: "Conseil Tacklor Guide AI",
-              save: "Enregistrer"
-            },
-            aiActive: "IA Active"
-          }
-        };
-
-        // --- STORAGE SERVICE ---
-        const LOGBOOK_KEY = 'tacklor_logbook';
-        const USER_KEY = 'tacklor_user_profile';
-
-        const compressImage = (file) => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-              const img = new Image();
-              img.src = event.target.result;
-              img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800;
-                const MAX_HEIGHT = 800;
-                let width = img.width;
-                let height = img.height;
-                if (width > height) {
-                  if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                } else {
-                  if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        const TRANSLATIONS = {
+            fr: {
+                dashboard: {
+                    title: "Carnet de Pêche",
+                    emptyTitle: "Votre aventure commence ici",
+                    emptySub: "Aucune prise enregistrée. Configurez votre clé API ou saisissez votre première capture manuellement.",
+                    btnNew: "Nouvelle Prise",
+                    statCount: "Prises",
+                    statWeight: "Poids Total",
+                    statCompliant: "Conformité"
+                },
+                settings: {
+                    title: "Paramètres",
+                    apiKeyLabel: "Clé API Google Gemini",
+                    apiKeyPlaceholder: "Collez votre clé ici (AI Studio)",
+                    save: "Sauvegarder",
+                    saved: "Clé enregistrée !",
+                    noKey: "Mode Manuel (IA Inactive)",
+                    hasKey: "IA Active",
+                    help: "Obtenir une clé gratuitement sur Google AI Studio"
+                },
+                form: {
+                    title: "Détails de la prise",
+                    upload: "Photo de la prise",
+                    uploadHint: "Appuyez pour ajouter une photo",
+                    analyzing: "Analyse IA en cours...",
+                    analyzeBtn: "Analyser l'image",
+                    manualMode: "Saisie Manuelle (Pas de Clé API)",
+                    save: "Enregistrer la prise",
+                    fields: {
+                        species: "Espèce",
+                        length: "Taille (cm)",
+                        weight: "Poids (kg)",
+                        technique: "Technique",
+                        spot: "Type de poste",
+                        weather: "Météo (Ciel, Temp...)",
+                        tide: "Marée / Phase"
+                    },
+                    compliance: {
+                        legal: "Légal",
+                        check: "Vérifier",
+                        warning: "Attention (Taille/Espèce)",
+                        compliant: "Conforme"
+                    }
                 }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.6));
-              };
-              img.onerror = reject;
-            };
-            reader.onerror = reject;
-          });
-        };
-
-        const getLogbook = () => {
-          try {
-            const stored = localStorage.getItem(LOGBOOK_KEY);
-            return stored ? JSON.parse(stored) : [];
-          } catch (e) { return []; }
-        };
-
-        const saveToLogbook = (newCatch) => {
-          try {
-            const current = getLogbook();
-            const updated = [newCatch, ...current];
-            localStorage.setItem(LOGBOOK_KEY, JSON.stringify(updated));
-            return updated;
-          } catch (e) {
-            alert("Storage Full!");
-            return getLogbook();
-          }
-        };
-
-        // --- SERVICES (MOCKED FOR STABILITY) ---
-        const analyzeCatchImageMock = async (file, lang) => {
-            console.log("Simulating AI Analysis...");
-            await new Promise(r => setTimeout(r, 2000)); // Delay
-            return {
-                species: lang === 'fr' ? "Bar Européen" : "European Bass",
-                length_cm: Math.floor(Math.random() * (70 - 30) + 30),
-                weight_kg: (Math.random() * (3 - 0.5) + 0.5).toFixed(1),
-                is_sensitive_species: false,
-                technique: lang === 'fr' ? "Leurre de surface" : "Topwater Lure",
-                spot_type: lang === 'fr' ? "Côte rocheuse" : "Rocky Coast"
-            };
-        };
-
-        const processFishingData = async (data, lang) => {
-            await new Promise(r => setTimeout(r, 1000));
-            const speciesLower = (data.species || "").toLowerCase();
-            let status = 'compliant';
-            let message = translations[lang].form.messages.compliant;
-            
-            if (speciesLower.includes('bar') || speciesLower.includes('bass')) {
-                status = 'legal_declaration_required';
-                message = translations[lang].form.messages.legal_required;
             }
-            
-            return {
-                status,
-                message,
-                advice: lang === 'fr' 
-                    ? "Marée descendante idéale. Essayez une animation lente près du fond." 
-                    : "Ideal falling tide. Try slow animation near the bottom."
-            };
         };
 
-        // --- COMPONENTS ---
+        // ==========================================
+        // 2. UTILS & SERVICES
+        // ==========================================
+        
+        const Utils = {
+            generateUUID: () => {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            },
 
-        const GlassCard = ({ children, className = '', theme = 'dark' }) => {
-            const bgClass = theme === 'dark' ? 'liquid-glass-dark' : 'liquid-glass';
-            return <div className={`${bgClass} rounded-3xl p-6 transition-all duration-300 ${className}`}>{children}</div>;
+            compressImage: (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let { width, height } = img;
+                            if (width > height) {
+                                if (width > CONFIG.MAX_IMAGE_WIDTH) { height *= CONFIG.MAX_IMAGE_WIDTH / width; width = CONFIG.MAX_IMAGE_WIDTH; }
+                            } else {
+                                if (height > CONFIG.MAX_IMAGE_WIDTH) { width *= CONFIG.MAX_IMAGE_WIDTH / height; height = CONFIG.MAX_IMAGE_WIDTH; }
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        };
+                        img.onerror = reject;
+                    };
+                    reader.onerror = reject;
+                });
+            },
+
+            formatDate: (isoString) => {
+                return new Date(isoString).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+            }
         };
 
-        const StatusBadge = ({ status, lang }) => {
-            const t = translations[lang].dashboard.status;
-            const colors = {
-                pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30',
-                compliant: 'bg-green-500/20 text-green-200 border-green-500/30',
-                to_declare: 'bg-red-500/20 text-red-200 border-red-500/30',
-                legal_declaration_required: 'bg-purple-500/20 text-purple-200 border-purple-500/30'
+        const StorageService = {
+            getLogbook: () => JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.LOGBOOK) || '[]'),
+            saveLogbook: (data) => localStorage.setItem(CONFIG.STORAGE_KEYS.LOGBOOK, JSON.stringify(data)),
+            getApiKey: () => localStorage.getItem(CONFIG.STORAGE_KEYS.API_KEY) || '',
+            saveApiKey: (key) => localStorage.setItem(CONFIG.STORAGE_KEYS.API_KEY, key)
+        };
+
+        const GeminiService = {
+            analyze: async (base64Image, apiKey) => {
+                if (!apiKey) throw new Error("Clé API manquante");
+
+                const prompt = `
+                Analyse cette image de pêche. Réponds UNIQUEMENT avec un objet JSON strict sans markdown.
+                Champs requis:
+                - species (string, nom commun français)
+                - length_cm (number, estimation)
+                - weight_kg (number, estimation)
+                - technique (string, déduite du matériel ou contexte)
+                - spot_type (string, ex: Rivière, Mer, Lac)
+                - compliance_check (boolean, est-ce une espèce protégée ou trop petite ? true si ok, false si doute)
+                `;
+
+                // Nettoyage du base64 si nécessaire (retirer le préfixe data:image...)
+                const cleanBase64 = base64Image.split(',')[1] || base64Image;
+
+                const body = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: "image/jpeg", data: cleanBase64 } }
+                        ]
+                    }],
+                    generationConfig: {
+                        response_mime_type: "application/json"
+                    }
+                };
+
+                const response = await fetch(`${CONFIG.API_URL}/${CONFIG.GEMINI_MODEL}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
+                
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Pas de réponse de l'IA");
+
+                return JSON.parse(text);
+            }
+        };
+
+        // ==========================================
+        // 3. COMPONENTS
+        // ==========================================
+
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const icons = {
+                fish: <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />,
+                plus: <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
+                settings: <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />,
+                check: <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />,
+                alert: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
+                camera: <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />,
+                x: <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             };
             return (
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-md ${colors[status] || colors.pending}`}>
-                    {t[status] || status}
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        const StatusBadge = ({ compliant }) => {
+            const style = compliant 
+                ? "bg-green-500/20 text-green-300 border-green-500/30"
+                : "bg-red-500/20 text-red-300 border-red-500/30";
+            const text = compliant 
+                ? TRANSLATIONS.fr.form.compliance.compliant 
+                : TRANSLATIONS.fr.form.compliance.warning;
+            
+            return (
+                <span className={`px-2 py-1 rounded-full text-xs font-semibold border flex items-center gap-1 ${style}`}>
+                    <Icon name={compliant ? "check" : "alert"} className="w-3 h-3" />
+                    {text}
                 </span>
             );
         };
 
-        const Dashboard = ({ catches, onAddNew, lang, theme, onToggleTheme }) => {
-            const t = translations[lang].dashboard;
+        // Optimized for list rendering
+        const CatchCard = React.memo(({ item }) => (
+            <div className="glass-card rounded-2xl overflow-hidden group hover:bg-white/10 flex flex-col h-full">
+                <div className="relative aspect-[4/3] bg-gray-900">
+                    <img src={item.imageUrl} alt={item.species} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <div className="absolute top-2 right-2">
+                        <StatusBadge compliant={item.isCompliant} />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                        <div className="text-white font-bold text-lg">{item.species || "Espèce inconnue"}</div>
+                        <div className="text-xs text-white/70">{Utils.formatDate(item.date)}</div>
+                    </div>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-2 text-sm text-gray-300">
+                    <div>📏 {item.length} cm</div>
+                    <div>⚖️ {item.weight} kg</div>
+                    {item.technique && <div className="col-span-2 text-xs opacity-70">🎣 {item.technique}</div>}
+                    {item.weather && <div className="col-span-2 text-xs opacity-70">☁️ {item.weather}</div>}
+                </div>
+            </div>
+        ));
+
+        const EmptyState = ({ onSetup }) => (
+            <div className="glass-panel rounded-3xl p-10 text-center max-w-lg mx-auto mt-10">
+                <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/30">
+                    <Icon name="fish" className="w-10 h-10 text-blue-300" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">{TRANSLATIONS.fr.dashboard.emptyTitle}</h2>
+                <p className="text-gray-400 mb-8">{TRANSLATIONS.fr.dashboard.emptySub}</p>
+                <button onClick={onSetup} className="text-blue-400 hover:text-blue-300 underline font-medium">
+                    Configurer la Clé API maintenant
+                </button>
+            </div>
+        );
+
+        const SettingsModal = ({ isOpen, onClose, apiKey, onSave }) => {
+            const [inputKey, setInputKey] = useState(apiKey);
+
+            useEffect(() => setInputKey(apiKey), [apiKey, isOpen]);
+
+            if (!isOpen) return null;
+
             return (
-                <div className="w-full max-w-7xl mx-auto p-4 space-y-8 pb-24">
-                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-2">
-                        <div>
-                            <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md">{t.title}</h1>
-                            <p className="text-white/60 mt-2">{t.subtitle}</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                            <Icon name="x" />
+                        </button>
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <Icon name="settings" /> {TRANSLATIONS.fr.settings.title}
+                        </h3>
+                        
+                        <div className="mb-4">
+                            <label className="block text-sm text-gray-400 mb-2">{TRANSLATIONS.fr.settings.apiKeyLabel}</label>
+                            <input 
+                                type="password" 
+                                value={inputKey}
+                                onChange={(e) => setInputKey(e.target.value)}
+                                placeholder={TRANSLATIONS.fr.settings.apiKeyPlaceholder}
+                                className="glass-input w-full rounded-lg px-4 py-3 text-sm font-mono"
+                            />
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={onToggleTheme} className="p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md">
-                                {theme === 'dark' ? '☀️' : '🌙'}
-                            </button>
-                            <button onClick={onAddNew} className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md shadow-lg font-medium flex items-center gap-2">
-                                <span>+</span> {t.newCatch}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-                            <span className="text-4xl font-bold">{catches.length}</span>
-                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">{t.totalCatches}</span>
-                        </GlassCard>
-                        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-                            <span className="text-4xl font-bold">{catches.reduce((acc, c) => acc + Number(c.weight_kg), 0).toFixed(1)} kg</span>
-                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">{t.totalWeight}</span>
-                        </GlassCard>
-                         <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-                            <span className="text-4xl font-bold text-green-400">100%</span>
-                            <span className="text-sm text-white/50 uppercase tracking-widest mt-2">Legal</span>
-                        </GlassCard>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {catches.length === 0 ? (
-                             <div className="col-span-full py-20 text-center">
-                                <GlassCard theme={theme} className="!bg-white/10 border-2 border-white/20 shadow-xl backdrop-blur-xl">
-                                    <div className="flex flex-col items-center p-6">
-                                        <div className="text-6xl mb-4">🎣</div>
-                                        <h3 className="text-xl font-bold mb-2 text-white">Bienvenue sur Tacklor Mark !</h3>
-                                        <p className="text-lg text-white/80">Enregistrez votre première prise pour commencer.</p>
-                                        <button onClick={onAddNew} className="mt-6 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-colors shadow-lg">
-                                            Ajouter une prise
-                                        </button>
-                                    </div>
-                                </GlassCard>
+                        
+                        <div className="flex items-center justify-between mb-6">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-xs text-blue-400 hover:underline">
+                                {TRANSLATIONS.fr.settings.help}
+                            </a>
+                            <div className={`text-xs px-2 py-1 rounded ${inputKey ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                {inputKey ? TRANSLATIONS.fr.settings.hasKey : TRANSLATIONS.fr.settings.noKey}
                             </div>
-                        ) : (
-                            catches.map(item => (
-                                <GlassCard key={item.id} theme={theme} className="p-0 overflow-hidden flex flex-col h-full group hover:bg-white/10">
-                                    <div className="relative h-48 w-full overflow-hidden">
-                                        <img src={item.imageUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md bg-white/10">{item.species}</div>
-                                        <div className="absolute top-3 right-3"><StatusBadge status={item.complianceStatus} lang={lang} /></div>
-                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                                            <p className="text-xs text-white/70">{new Date(item.date).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-5 flex-grow space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div><span className="text-xs text-white/40 block">{t.labels.length}</span><span className="text-lg font-medium">{item.length_cm} cm</span></div>
-                                            <div><span className="text-xs text-white/40 block">{t.labels.weight}</span><span className="text-lg font-medium">{item.weight_kg} kg</span></div>
-                                        </div>
-                                        {item.aiAdvice && (
-                                            <div className="bg-white/5 p-3 rounded-lg border border-white/5 text-xs italic text-white/80">
-                                                "{item.aiAdvice}"
-                                            </div>
-                                        )}
-                                    </div>
-                                </GlassCard>
-                            ))
-                        )}
+                        </div>
+
+                        <button 
+                            onClick={() => { onSave(inputKey); onClose(); }}
+                            className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20"
+                        >
+                            {TRANSLATIONS.fr.settings.save}
+                        </button>
                     </div>
                 </div>
             );
         };
 
-        const NewCatchForm = ({ onSave, onCancel, lang, theme }) => {
-            const [file, setFile] = useState(null);
+        const NewCatchForm = ({ apiKey, onSave, onCancel }) => {
+            const [image, setImage] = useState(null);
             const [preview, setPreview] = useState(null);
-            const [analysis, setAnalysis] = useState(null);
             const [loading, setLoading] = useState(false);
-            const [status, setStatus] = useState({ status: 'pending', message: '', advice: '' });
-            const fileInput = useRef(null);
-            const t = translations[lang].form;
+            const [data, setData] = useState({
+                species: '', length: '', weight: '', technique: '', spot: '', weather: '', tide: '',
+                isCompliant: true
+            });
 
-            const handleFile = (e) => {
-                const f = e.target.files[0];
-                if (f) {
-                    setFile(f);
-                    setPreview(URL.createObjectURL(f));
-                    setAnalysis(null);
+            const handleImage = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Immediate preview
+                setPreview(URL.createObjectURL(file));
+                
+                try {
+                    const compressed = await Utils.compressImage(file);
+                    setImage(compressed);
+
+                    // Auto-Analyze if Key is present
+                    if (apiKey) {
+                        setLoading(true);
+                        const analysis = await GeminiService.analyze(compressed, apiKey);
+                        setData(prev => ({
+                            ...prev,
+                            species: analysis.species || '',
+                            length: analysis.length_cm || '',
+                            weight: analysis.weight_kg || '',
+                            technique: analysis.technique || '',
+                            spot: analysis.spot_type || '',
+                            isCompliant: analysis.compliance_check !== false // Default to true if undefined
+                        }));
+                    }
+                } catch (err) {
+                    console.error("Image processing error", err);
+                    alert("Erreur analyse: " + err.message);
+                } finally {
+                    setLoading(false);
                 }
             };
 
-            const runAnalysis = async () => {
-                setLoading(true);
-                try {
-                    const result = await analyzeCatchImageMock(file, lang);
-                    setAnalysis(result);
-                    const check = await processFishingData(result, lang);
-                    setStatus(check);
-                } catch(e) { alert("Error"); }
-                setLoading(false);
+            const handleSubmit = () => {
+                if (!image) return alert("Photo requise");
+                onSave({
+                    id: Utils.generateUUID(),
+                    date: new Date().toISOString(),
+                    imageUrl: image,
+                    ...data
+                });
             };
 
-            const save = async () => {
-                setLoading(true);
-                const base64 = await compressImage(file);
-                onSave({
-                    id: generateUUID(),
-                    date: new Date().toISOString(),
-                    imageUrl: base64,
-                    ...analysis,
-                    complianceStatus: status.status,
-                    aiAdvice: status.advice
-                });
-                setLoading(false);
-            };
+            const t = TRANSLATIONS.fr.form;
 
             return (
-                <div className="w-full max-w-2xl mx-auto p-4 pb-20">
-                    <button onClick={onCancel} className="mb-6 text-white/60 hover:text-white flex items-center gap-2">← {t.back}</button>
-                    <GlassCard theme={theme} className="space-y-6">
-                        <div onClick={() => !preview && fileInput.current.click()} className="relative aspect-video rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center overflow-hidden hover:bg-white/5 cursor-pointer">
+                <div className="glass-panel w-full max-w-2xl mx-auto rounded-3xl overflow-hidden shadow-2xl animate-[slideUp_0.3s_ease-out]">
+                    <div className="bg-black/20 p-4 flex justify-between items-center border-b border-white/5">
+                        <button onClick={onCancel} className="text-gray-400 hover:text-white flex items-center gap-1 text-sm">
+                            ← Retour
+                        </button>
+                        <h2 className="font-bold">{t.title}</h2>
+                        <div className="w-10"></div>
+                    </div>
+
+                    <div className="p-6 space-y-6 max-h-[85vh] overflow-y-auto scrollbar-hide">
+                        {/* Image Upload Area */}
+                        <div className="relative w-full aspect-video bg-black/40 rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center overflow-hidden group">
                             {preview ? (
                                 <img src={preview} className="w-full h-full object-cover" />
                             ) : (
-                                <div className="text-center p-6">
-                                    <div className="text-4xl mb-2">📷</div>
-                                    <p>{t.upload.title}</p>
+                                <div className="text-center p-4">
+                                    <Icon name="camera" className="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                                    <p className="text-sm text-gray-400">{t.uploadHint}</p>
                                 </div>
                             )}
-                            <input type="file" ref={fileInput} onChange={handleFile} accept="image/*" className="hidden" />
-                            {preview && !analysis && (
-                                <button onClick={(e) => { e.stopPropagation(); runAnalysis(); }} disabled={loading} className="absolute bottom-6 px-6 py-3 bg-blue-600 rounded-full shadow-lg text-white font-bold">
-                                    {loading ? t.analyzing : t.analyze}
-                                </button>
+                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleImage} />
+                            
+                            {loading && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                        <span className="text-xs font-mono text-blue-300 blink">{t.analyzing}</span>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
-                        {analysis && (
-                            <div className="space-y-4 animate-pulse-once">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-xs text-white/60">{t.fields.species}</label><input value={analysis.species} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white" /></div>
-                                    <div><label className="text-xs text-white/60">{t.fields.length}</label><input value={analysis.length_cm} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white" /></div>
-                                </div>
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                    <h4 className="font-bold text-sm mb-1">{t.compliance.title}</h4>
-                                    <p className="text-sm text-green-300">{status.message}</p>
-                                </div>
-                                <button onClick={save} disabled={loading} className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all">
-                                    {t.save}
-                                </button>
+                        {!apiKey && !loading && (
+                            <div className="text-center text-xs text-yellow-500/80 bg-yellow-900/10 p-2 rounded border border-yellow-500/20">
+                                {t.manualMode}
                             </div>
                         )}
-                    </GlassCard>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">{t.fields.species}</label>
+                                <input type="text" className="glass-input w-full rounded p-3" value={data.species} onChange={e => setData({...data, species: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">{t.fields.length}</label>
+                                    <input type="number" className="glass-input w-full rounded p-3" value={data.length} onChange={e => setData({...data, length: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-400 block mb-1">{t.fields.weight}</label>
+                                    <input type="number" className="glass-input w-full rounded p-3" value={data.weight} onChange={e => setData({...data, weight: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">{t.fields.weather}</label>
+                                <input type="text" placeholder="Ex: Ensoleillé, 22°C" className="glass-input w-full rounded p-3" value={data.weather} onChange={e => setData({...data, weather: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-400 block mb-1">{t.fields.tide}</label>
+                                <input type="text" placeholder="Ex: Montante, coef 85" className="glass-input w-full rounded p-3" value={data.tide} onChange={e => setData({...data, tide: e.target.value})} />
+                            </div>
+                        </div>
+
+                        <button onClick={handleSubmit} className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-all transform active:scale-95">
+                            {t.save}
+                        </button>
+                    </div>
                 </div>
             );
         };
 
-        // --- MAIN APP ---
-        const App = () => {
-            const [view, setView] = useState('DASHBOARD');
-            const [catches, setCatches] = useState([]);
-            const [lang, setLang] = useState('fr');
-            const [theme, setTheme] = useState('dark');
+        // ==========================================
+        // 4. MAIN APP CONTROLLER
+        // ==========================================
 
+        const App = () => {
+            const [view, setView] = useState('DASHBOARD'); // DASHBOARD, NEW
+            const [logbook, setLogbook] = useState([]);
+            const [apiKey, setApiKey] = useState('');
+            const [showSettings, setShowSettings] = useState(false);
+
+            // Load Initial Data
             useEffect(() => {
-                setCatches(getLogbook());
+                setLogbook(StorageService.getLogbook());
+                setApiKey(StorageService.getApiKey());
             }, []);
 
-            const handleSave = (record) => {
-                const updated = saveToLogbook(record);
-                setCatches(updated);
+            const handleSaveCatch = (newCatch) => {
+                const updated = [newCatch, ...logbook];
+                setLogbook(updated);
+                StorageService.saveLogbook(updated);
                 setView('DASHBOARD');
             };
 
+            const handleSaveKey = (key) => {
+                setApiKey(key);
+                StorageService.saveApiKey(key);
+            };
+
+            const t = TRANSLATIONS.fr.dashboard;
+
             return (
-                <div className="min-h-screen pb-10 relative">
-                    <div className="fixed top-0 left-0 right-0 h-48 z-40 pointer-events-none" style={{ backdropFilter: 'blur(12px)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)' }} />
-                    
-                    <nav className="sticky top-0 z-50 px-6 py-4 mb-6">
-                        <div className="max-w-7xl mx-auto">
-                            <div className="liquid-glass rounded-2xl px-6 py-3 flex items-center justify-between shadow-2xl">
-                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('DASHBOARD')}>
-                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" className="w-8 h-8 object-contain" />
-                                    <span className="font-bold text-lg">Tacklor Mark</span>
+                <div className="min-h-screen pb-20 relative">
+                    {/* Header */}
+                    <header className="fixed top-0 w-full z-40 px-4 py-4">
+                        <div className="glass-panel max-w-5xl mx-auto rounded-full px-6 py-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('DASHBOARD')}>
+                                <div className="w-8 h-8 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <Icon name="fish" className="text-white w-5 h-5" />
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')} className="text-xs font-bold px-3 py-1 bg-white/10 rounded-full border border-white/20 uppercase">{lang}</button>
-                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center text-xs">👤</div>
-                                </div>
+                                <h1 className="font-bold text-lg tracking-tight hidden sm:block">{t.title}</h1>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {apiKey ? (
+                                    <span className="text-[10px] bg-green-500/20 text-green-300 border border-green-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> IA Active
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-0.5 rounded-full">Manuel</span>
+                                )}
+                                <button onClick={() => setShowSettings(true)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <Icon name="settings" />
+                                </button>
                             </div>
                         </div>
-                    </nav>
+                    </header>
 
-                    <main className="relative z-0">
-                        {view === 'DASHBOARD' && <Dashboard catches={catches} onAddNew={() => setView('NEW_CATCH')} lang={lang} theme={theme} onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />}
-                        {view === 'NEW_CATCH' && <NewCatchForm onSave={handleSave} onCancel={() => setView('DASHBOARD')} lang={lang} theme={theme} />}
+                    {/* Main Content */}
+                    <main className="pt-24 px-4 max-w-5xl mx-auto">
+                        {view === 'DASHBOARD' && (
+                            <>
+                                {/* Floating Action Button for Mobile */}
+                                <button 
+                                    onClick={() => setView('NEW')}
+                                    className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-600/40 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 md:hidden"
+                                >
+                                    <Icon name="plus" className="w-8 h-8" />
+                                </button>
+
+                                {/* Desktop Action Bar */}
+                                <div className="flex justify-between items-end mb-8">
+                                    <div className="flex gap-4">
+                                        <div className="text-center">
+                                            <div className="text-2xl font-bold">{logbook.length}</div>
+                                            <div className="text-xs text-gray-400 uppercase tracking-wider">{t.statCount}</div>
+                                        </div>
+                                        <div className="w-px bg-white/10"></div>
+                                        <div className="text-center">
+                                            <div className="text-2xl font-bold">
+                                                {logbook.reduce((acc, c) => acc + (parseFloat(c.weight) || 0), 0).toFixed(1)} <span className="text-sm font-normal">kg</span>
+                                            </div>
+                                            <div className="text-xs text-gray-400 uppercase tracking-wider">{t.statWeight}</div>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setView('NEW')} 
+                                        className="hidden md:flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all"
+                                    >
+                                        <Icon name="plus" /> {t.btnNew}
+                                    </button>
+                                </div>
+
+                                {/* Grid */}
+                                {logbook.length === 0 ? (
+                                    <EmptyState onSetup={() => setShowSettings(true)} />
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {logbook.map(item => <CatchCard key={item.id} item={item} />)}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {view === 'NEW' && (
+                            <NewCatchForm 
+                                apiKey={apiKey} 
+                                onSave={handleSaveCatch} 
+                                onCancel={() => setView('DASHBOARD')} 
+                            />
+                        )}
                     </main>
+
+                    <SettingsModal 
+                        isOpen={showSettings} 
+                        onClose={() => setShowSettings(false)} 
+                        apiKey={apiKey} 
+                        onSave={handleSaveKey} 
+                    />
                 </div>
             );
         };
