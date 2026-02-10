@@ -1,3 +1,4 @@
+
 export interface CatchAnalysis {
   species: string;
   length_cm: number;
@@ -22,6 +23,17 @@ export interface UserProfile {
   avatarUrl: string;
 }
 
+export interface LeaderboardEntry {
+  userId: string;
+  displayName: string;
+  photoURL: string;
+  total_length_cm: number;
+  total_weight_kg: number;
+  catch_count: number;
+  level: string; // Ex: "Pêcheur Amateur", "Légende", etc.
+  last_updated: any; // Firestore Timestamp
+}
+
 export interface WeatherData {
   temp: number;
   wind: number;
@@ -36,6 +48,7 @@ export interface WeatherData {
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   NEW_CATCH = 'NEW_CATCH',
+  LEADERBOARD = 'LEADERBOARD',
 }
 
 export type Language = 'fr' | 'en';

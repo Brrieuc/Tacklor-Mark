@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
+import { Leaderboard } from './components/Leaderboard'; // Import Leaderboard
 import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
 import { fetchUserCaptures, saveCapture, deleteCapture, updateCapture } from './services/storageService';
@@ -107,10 +108,11 @@ export default function App() {
         let updatedLogbook;
         
         // Si editingCatch est présent, on met à jour, sinon on crée
+        // NOTE: On passe 'user' pour pouvoir mettre à jour le Leaderboard
         if (editingCatch) {
-            updatedLogbook = await updateCapture(record, user.uid);
+            updatedLogbook = await updateCapture(record, user);
         } else {
-            updatedLogbook = await saveCapture(record, user.uid);
+            updatedLogbook = await saveCapture(record, user);
         }
         
         setCatches(updatedLogbook);
@@ -132,9 +134,9 @@ export default function App() {
   const handleDeleteCatch = async (id: string) => {
     if (!user) return;
     
-    // On met à jour l'UI de manière optimiste ou on attend la confirmation
     try {
-        await deleteCapture(id);
+        // NOTE: On passe 'user' pour la mise à jour Leaderboard après suppression
+        await deleteCapture(id, user);
         setCatches(prev => prev.filter(c => c.id !== id));
     } catch (error) {
         console.error("Failed to delete", error);
@@ -177,6 +179,7 @@ export default function App() {
                 ${isScrolled ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b' : 'shadow-2xl border'}
             `}
           >
+            {/* Logo + Title */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setView(ViewState.DASHBOARD); setEditingCatch(null); }}>
                <img 
                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" 
@@ -186,7 +189,20 @@ export default function App() {
                <span className={`hidden sm:inline text-xl font-bold tracking-tight text-white ${textShadowClass}`}>{t.appTitle}</span>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Navigation Actions */}
+            <div className="flex items-center gap-2 md:gap-3">
+              
+              {/* Leaderboard Button (Only visible if not scrolled for better space or simple icon if scrolled) */}
+              <button 
+                onClick={() => setView(ViewState.LEADERBOARD)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border text-white ${textShadowClass} ${view === ViewState.LEADERBOARD ? 'bg-yellow-500/20 border-yellow-400/50 text-yellow-200' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
+              >
+                 <span className="text-lg">🏆</span>
+                 <span className={`text-xs font-bold uppercase tracking-wider hidden md:inline`}>Classement</span>
+              </button>
+
+              <div className="h-6 w-px bg-white/20 mx-1"></div>
+
               <button 
                 onClick={() => setLang(prev => prev === 'fr' ? 'en' : 'fr')}
                 className={`text-xs font-bold px-3 py-1.5 rounded-full transition-colors uppercase tracking-wider border bg-white/20 hover:bg-white/30 text-white border-white/30 ${textShadowClass}`}
@@ -290,6 +306,14 @@ export default function App() {
             weather={weatherData}
             initialData={editingCatch}
           />
+        )}
+
+        {view === ViewState.LEADERBOARD && (
+            <Leaderboard 
+                lang={lang} 
+                theme={theme}
+                userCurrentId={user?.uid}
+            />
         )}
       </main>
     </div>

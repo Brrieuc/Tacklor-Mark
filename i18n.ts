@@ -42,6 +42,22 @@ export const translations = {
         viewAllBadges: "View All Badges"
       }
     },
+    leaderboard: {
+      title: "Community Leaderboard",
+      subtitle: "Top 10 Anglers",
+      rank: "Rank",
+      angler: "Angler",
+      totalLength: "Total Length",
+      totalWeight: "Total Weight",
+      catches: "Catches",
+      empty: "No ranked anglers yet.",
+      join: "Add a catch to join the ranking!",
+      categories: {
+        length: "Length",
+        weight: "Weight",
+        count: "Catches"
+      }
+    },
     form: {
       back: "Back",
       title: "New Entry",
@@ -204,6 +220,22 @@ export const translations = {
         close: "Fermer",
         confirmDelete: "Êtes-vous sûr de vouloir supprimer cette prise ? Cette action est irréversible.",
         viewAllBadges: "Voir tous mes badges"
+      }
+    },
+    leaderboard: {
+      title: "Classement Communauté",
+      subtitle: "Top 10 Pêcheurs",
+      rank: "Rang",
+      angler: "Pêcheur",
+      totalLength: "Longueur Totale",
+      totalWeight: "Poids Total",
+      catches: "Prises",
+      empty: "Le classement est encore vide.",
+      join: "Ajoutez une prise pour entrer dans le classement !",
+      categories: {
+        length: "Longueur",
+        weight: "Poids",
+        count: "Prises"
       }
     },
     form: {
