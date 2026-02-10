@@ -100,7 +100,7 @@ export const translations = {
         compliant: "Catch is compliant with current regulations.",
         sensitive: "Sensitive species detected. Declaration required.",
         undersize: "Undersize catch. Please verify local regulations.",
-        legal_required: "Target species (Bass/Pollock) requires specific declaration."
+        legal_required: "⚠️ MANDATORY DECLARATION (2026 Regulation). This species is strictly regulated in this zone."
       },
       adviceTitle: "Tacklor Guide AI Advice",
       save: "Save to Logbook",
@@ -291,7 +291,7 @@ export const translations = {
         compliant: "La prise est conforme aux réglementations actuelles.",
         sensitive: "Espèce sensible détectée. Déclaration requise.",
         undersize: "Taille insuffisante. Veuillez vérifier les réglementations locales.",
-        legal_required: "Espèce cible (Bar/Lieu) nécessitant une déclaration spécifique."
+        legal_required: "⚠️ DÉCLARATION OBLIGATOIRE (Réglementation 2026). Espèce soumise à quota dans cette zone."
       },
       adviceTitle: "Conseil Tacklor Guide AI",
       save: "Enregistrer",

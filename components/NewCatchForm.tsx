@@ -210,14 +210,20 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const handleRecFishingCheck = async (data: CatchAnalysis) => {
     setIsSyncing(true);
     try {
-      const result: ProcessingResult = await processFishingData(data, lang);
+      // IMPORTANT: On passe aussi le snapshot météo (qui contient lat/lon) pour la détermination de zone
+      const enrichedData: Partial<CatchRecord> = {
+          ...data,
+          weatherSnapshot: weather || undefined
+      };
+
+      const result: ProcessingResult = await processFishingData(enrichedData, lang);
       setComplianceStatus(result.status);
       setComplianceMessage(result.message);
+      
       // On garde l'ancien conseil si on édite, sauf si l'analyse vient de tourner
       if ((!aiAdvice || isAnalyzing) && !isEditMode) {
           setAiAdvice(result.advice);
       } else if (isAnalyzing && isEditMode) {
-          // Si on analyse explicitement en mode edit, on met à jour
           setAiAdvice(result.advice);
       }
     } catch (error) {
@@ -234,7 +240,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     }
     
     // Blocage UNIQUEMENT si taille impossible (error)
-    // On autorise si 'record' (Warning) ou 'valid'
     if (validationStatus === 'error') {
         const speciesName = currentSpeciesData ? (lang === 'fr' ? currentSpeciesData.fr : currentSpeciesData.en) : formData.species;
         alert(t.validation.sizeImpossible.replace('{species}', speciesName));
@@ -266,6 +271,9 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
         setIsSaving(false);
     }
   };
+
+  // Helper to determine if we should show the full alert box
+  const showLegalAlert = complianceStatus === 'legal_declaration_required';
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 pb-20">
@@ -464,46 +472,70 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                   </div>
              </div>
 
-            {/* RecFishing Compliance Check */}
+            {/* RecFishing Compliance Check - REDUCED UI */}
             <div className={`border-t pt-6 border-white/20`}>
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              {/* Entête */}
+              <div className="flex items-center justify-between gap-4">
                  <div>
                     <h3 className={`text-lg font-bold text-white ${textShadowClass}`}>{t.compliance.title}</h3>
-                    <p className={`text-sm text-white/70 ${textShadowClass}`}>{t.compliance.subtitle}</p>
                  </div>
                  
                  {isSyncing ? (
-                      <div className="px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 bg-white/10 text-white">
+                      <div className="px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 bg-white/10 text-white">
                          <span>{t.compliance.checking}</span>
                       </div>
                  ) : (
-                    <div className={`px-4 py-2 rounded-xl border flex items-center gap-3 ${
-                        complianceStatus === 'compliant' 
-                        ? 'bg-green-500/20 border-green-500/30 text-green-200' 
-                        : complianceStatus === 'legal_declaration_required'
-                        ? 'bg-purple-500/20 border-purple-500/30 text-purple-200'
-                        : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-200'
-                    }`}>
-                        <span className="font-bold capitalize drop-shadow-sm">
-                            {complianceStatus === 'compliant' ? t.compliance.compliant : 
-                             complianceStatus === 'legal_declaration_required' ? t.compliance.actionRequired : 
-                             t.compliance.actionRequired}
-                        </span>
-                    </div>
+                    // Badges Simplifiés
+                    <>
+                        {complianceStatus === 'compliant' && (
+                             <div className="flex items-center gap-2 text-green-400 font-bold bg-green-500/10 px-3 py-1 rounded-full border border-green-500/30">
+                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                 </svg>
+                                 {t.compliance.compliant}
+                             </div>
+                        )}
+                         {complianceStatus === 'to_declare' && (
+                            <div className="text-yellow-400 font-bold bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/30">
+                                ⚠️ {t.compliance.actionRequired}
+                            </div>
+                        )}
+                        {showLegalAlert && (
+                            <div className="text-purple-300 font-bold bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/50 animate-pulse">
+                                ⚖️ {t.compliance.actionRequired}
+                            </div>
+                        )}
+                    </>
                  )}
               </div>
               
-              {complianceMessage && (
-                  <div className="mt-3 text-sm p-3 rounded-lg border bg-black/20 border-white/10 text-white/80">
-                      {complianceMessage}
-                  </div>
-              )}
+              {/* Alert Message Box - Only show if Not Compliant */}
+              {(complianceMessage && complianceStatus !== 'compliant') && (
+                  <div className={`mt-4 p-4 rounded-xl border flex flex-col gap-3 ${
+                      showLegalAlert 
+                      ? 'bg-purple-900/40 border-purple-500/50 text-white' 
+                      : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-100'
+                  }`}>
+                      <div className="flex items-start gap-3">
+                          <span className="text-2xl">{showLegalAlert ? '🚨' : '⚠️'}</span>
+                          <p className="text-sm font-medium pt-1">{complianceMessage}</p>
+                      </div>
 
-              {/* Specific Legal Button */}
-              {complianceStatus === 'legal_declaration_required' && (
-                  <button className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg shadow-md transition-colors border border-white/20">
-                      {t.compliance.actionRequired} (CERFA)
-                  </button>
+                      {/* Specific Legal Button - ONLY if required */}
+                      {showLegalAlert && (
+                        <a 
+                            href="https://www.mer.gouv.fr/peche-de-loisir-declaration-de-captures" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full mt-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg text-center transition-all border border-white/20 flex items-center justify-center gap-2"
+                        >
+                            <span>Remplir ma déclaration (CERFA)</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </a>
+                      )}
+                  </div>
               )}
             </div>
 

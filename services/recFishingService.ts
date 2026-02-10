@@ -7,37 +7,89 @@ export interface ProcessingResult {
   advice: string;
 }
 
+type Zone = 'MED' | 'ATL' | 'UNKNOWN';
+
+/**
+ * Détermine la zone de pêche basée sur les coordonnées GPS.
+ * Approximation simplifiée pour le MVP :
+ * Méditerranée : Lat < 43.5 ET Lon > 2.0 (Approximation grossière Sud-Est France)
+ * Atlantique/Manche/Mer du Nord (ICES 7 & 8) : Le reste.
+ */
+const determineFishingZone = (lat?: number, lon?: number): Zone => {
+  if (!lat || !lon) return 'UNKNOWN'; // Par défaut, on appliquera le principe de précaution
+  
+  if (lat < 43.5 && lon > 2.0) {
+    return 'MED';
+  }
+  return 'ATL';
+};
+
 /**
  * Logic Controller: Processes fishing data to determine compliance and generate advice.
- * Simulates connection to "Tacklor Guide AI" and government portals.
+ * Updates based on 2026 Regulations from mer.gouv.fr
  */
 export const processFishingData = async (catchData: Partial<CatchRecord>, lang: Language = 'fr'): Promise<ProcessingResult> => {
   // Simulate API latency
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   const t = translations[lang].form.messages;
   let status: CatchRecord['complianceStatus'] = 'compliant';
   let message = t.compliant;
   
-  // 1. Compliance Logic (RecFishing)
   const speciesLower = catchData.species?.toLowerCase() || "";
   
-  // Check for specific regulated species (Bar/Bass or Lieu Jaune/Pollock)
-  const regulatedSpecies = ['bar', 'bass', 'lieu jaune', 'pollock'];
-  const isRegulated = regulatedSpecies.some(s => speciesLower.includes(s));
+  // Récupération des données Géo via le weatherSnapshot inclus dans catchData
+  const lat = catchData.weatherSnapshot?.lat;
+  const lon = catchData.weatherSnapshot?.lon;
+  const zone = determineFishingZone(lat, lon);
 
-  if (isRegulated) {
+  // --- MATRICE DE RÉGLEMENTATION 2026 ---
+  // Déclaration obligatoire RecFishing (CERFA) uniquement pour ces cas précis.
+  let declarationRequired = false;
+
+  // 1. Thon Rouge (Toutes zones)
+  if (speciesLower.includes('thon rouge') || speciesLower.includes('bluefin')) {
+    declarationRequired = true;
+  }
+  
+  // 2. Bar / Loup (Atlantique/Manche uniquement - Zones CIEM 7&8)
+  else if ((speciesLower.includes('bar') || speciesLower.includes('loup') || speciesLower.includes('bass')) && zone !== 'MED') {
+    declarationRequired = true;
+  }
+
+  // 3. Lieu Jaune (Atlantique/Manche uniquement - Zones CIEM 7&8)
+  else if ((speciesLower.includes('lieu jaune') || speciesLower.includes('pollock')) && zone !== 'MED') {
+    declarationRequired = true;
+  }
+
+  // 4. Dorade Rose (Zones 7, 8 & Méditerranée -> Partout en France)
+  else if (speciesLower.includes('dorade rose') || speciesLower.includes('red seabream') || speciesLower.includes('pagellus')) {
+    declarationRequired = true;
+  }
+
+  // 5. Dorade Coryphène (Méditerranée uniquement)
+  else if ((speciesLower.includes('coryphène') || speciesLower.includes('mahi')) && zone === 'MED') {
+    declarationRequired = true;
+  }
+
+  // --- APPLICATION DU STATUT ---
+
+  if (declarationRequired) {
     status = 'legal_declaration_required';
     message = t.legal_required;
-  } else if (catchData.is_sensitive_species) {
-    status = 'to_declare';
-    message = t.sensitive;
-  } else if ((catchData.length_cm || 0) < 20) {
+  } 
+  // Règle générale taille (sauf si déjà flaggué "legal")
+  else if ((catchData.length_cm || 0) < 20) {
      status = 'to_declare';
      message = t.undersize;
   }
+  // Espèce sensible générique (si cochée manuellement par l'utilisateur)
+  else if (catchData.is_sensitive_species) {
+    status = 'to_declare';
+    message = t.sensitive;
+  }
 
-  // 2. Tacklor Guide AI Advice Logic (Simulation)
+  // --- TACKLOR GUIDE AI ADVICE (Simulation) ---
   let advice = "";
   if (lang === 'fr') {
     if (speciesLower.includes('bar') || speciesLower.includes('bass')) {
