@@ -48,6 +48,7 @@ export const compressImage = (file: File): Promise<string> => {
 
 /**
  * Récupère uniquement les captures de l'utilisateur connecté depuis la collection "captures".
+ * Correction: Tri côté client pour éviter l'erreur "Missing Index" de Firestore sur les requêtes composées.
  */
 export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRecord[]> => {
   // Sécurité côté client : Si pas d'ID, on retourne vide immédiatement.
@@ -57,11 +58,12 @@ export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRe
 
   try {
       const catchesRef = collection(db, "captures");
-      // Requête : Filtrer par userId et trier par date décroissante
+      
+      // Requête simple : Filtrer par userId uniquement.
+      // Note: On ne met pas orderBy("date") ici pour éviter de devoir créer un index composite manuellement dans Firebase Console.
       const q = query(
           catchesRef, 
-          where("userId", "==", userId),
-          orderBy("date", "desc")
+          where("userId", "==", userId)
       );
       
       const querySnapshot = await getDocs(q);
@@ -70,12 +72,19 @@ export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRe
       querySnapshot.forEach((doc) => {
           const data = doc.data();
           // On cast les données Firestore vers notre type CatchRecord
-          // doc.id devient l'identifiant officiel
           records.push({ ...data, id: doc.id } as CatchRecord);
       });
-      return records;
+
+      // Tri côté client : Du plus récent au plus ancien
+      return records.sort((a, b) => {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          return dateB - dateA;
+      });
+
   } catch (e) {
       console.error("Erreur lors de la récupération des captures:", e);
+      // En cas d'erreur (ex: quota, network), on retourne un tableau vide pour ne pas crasher l'UI
       return [];
   }
 };
