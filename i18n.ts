@@ -83,7 +83,8 @@ export const translations = {
         }
       },
       validation: {
-        sizeError: "Size inconsistent for this species (Max: {max} cm)",
+        sizeImpossible: "This size seems impossible for a {species}. Please check your entry.",
+        sizeRecord: "WOW! This is potentially a new record, make sure you have a photo to validate this trophy!",
         sizeHint: "Biological max size: {max} cm",
         selectSpecies: "Please select a species."
       },
@@ -273,7 +274,8 @@ export const translations = {
         }
       },
       validation: {
-        sizeError: "Taille incohérente pour cette espèce (Max : {max} cm)",
+        sizeImpossible: "Cette taille semble impossible pour un(e) {species}. Vérifiez votre saisie.",
+        sizeRecord: "WOW ! C'est potentiellement un nouveau record, assurez-vous d'avoir une photo pour valider ce trophée !",
         sizeHint: "Taille max biologique : {max} cm",
         selectSpecies: "Veuillez sélectionner une espèce."
       },

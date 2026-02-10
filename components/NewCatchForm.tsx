@@ -16,48 +16,51 @@ interface NewCatchFormProps {
 }
 
 // Données Biologiques des espèces (Data Quality Expert)
+// Max: Taille biologique max
+// Limit: Plafond de l'application (blocker)
 interface SpeciesData {
   id: string;
   fr: string;
   en: string;
-  max: number; // Taille maximum biologique en cm
+  max: number; 
+  limit: number;
   type: 'freshwater' | 'saltwater';
 }
 
 const SPECIES_DB: SpeciesData[] = [
   // Eau douce
-  { id: 'pike', fr: 'Brochet', en: 'Northern Pike', max: 140, type: 'freshwater' },
-  { id: 'zander', fr: 'Sandre', en: 'Zander', max: 100, type: 'freshwater' },
-  { id: 'perch', fr: 'Perche', en: 'European Perch', max: 55, type: 'freshwater' },
-  { id: 'carp', fr: 'Carpe Commune', en: 'Common Carp', max: 120, type: 'freshwater' },
-  { id: 'catfish', fr: 'Silure', en: 'Wels Catfish', max: 270, type: 'freshwater' },
-  { id: 'trout', fr: 'Truite Fario', en: 'Brown Trout', max: 90, type: 'freshwater' },
-  { id: 'blackbass', fr: 'Black-Bass', en: 'Black Bass', max: 65, type: 'freshwater' },
-  { id: 'chub', fr: 'Chevesne', en: 'European Chub', max: 65, type: 'freshwater' },
-  { id: 'barbel', fr: 'Barbeau', en: 'Barbel', max: 90, type: 'freshwater' },
-  { id: 'bream', fr: 'Brème', en: 'Bream', max: 70, type: 'freshwater' },
-  { id: 'eel', fr: 'Anguille', en: 'Eel', max: 100, type: 'freshwater' },
-  { id: 'roach', fr: 'Gardon', en: 'Roach', max: 40, type: 'freshwater' },
-  { id: 'rudd', fr: 'Rotengle', en: 'Common Rudd', max: 40, type: 'freshwater' },
-  { id: 'char', fr: 'Omble Chevalier', en: 'Arctic Char', max: 70, type: 'freshwater' },
-  { id: 'sturgeon', fr: 'Esturgeon', en: 'Sturgeon', max: 200, type: 'freshwater' },
+  { id: 'pike', fr: 'Brochet', en: 'Northern Pike', max: 140, limit: 160, type: 'freshwater' },
+  { id: 'zander', fr: 'Sandre', en: 'Zander', max: 100, limit: 115, type: 'freshwater' },
+  { id: 'perch', fr: 'Perche', en: 'European Perch', max: 55, limit: 65, type: 'freshwater' },
+  { id: 'carp', fr: 'Carpe Commune', en: 'Common Carp', max: 120, limit: 135, type: 'freshwater' },
+  { id: 'catfish', fr: 'Silure', en: 'Wels Catfish', max: 270, limit: 300, type: 'freshwater' },
+  { id: 'blackbass', fr: 'Black-Bass', en: 'Black Bass', max: 65, limit: 75, type: 'freshwater' },
+  { id: 'trout', fr: 'Truite Fario', en: 'Brown Trout', max: 90, limit: 105, type: 'freshwater' },
+  { id: 'chub', fr: 'Chevesne', en: 'European Chub', max: 65, limit: 75, type: 'freshwater' },
+  { id: 'barbel', fr: 'Barbeau', en: 'Barbel', max: 90, limit: 105, type: 'freshwater' },
+  { id: 'bream', fr: 'Brème', en: 'Bream', max: 70, limit: 85, type: 'freshwater' },
+  { id: 'eel', fr: 'Anguille', en: 'Eel', max: 100, limit: 120, type: 'freshwater' },
+  { id: 'roach', fr: 'Gardon', en: 'Roach', max: 40, limit: 50, type: 'freshwater' },
+  { id: 'rudd', fr: 'Rotengle', en: 'Common Rudd', max: 40, limit: 50, type: 'freshwater' },
+  { id: 'sturgeon', fr: 'Esturgeon', en: 'Sturgeon', max: 200, limit: 250, type: 'freshwater' },
+  { id: 'char', fr: 'Omble Chevalier', en: 'Arctic Char', max: 70, limit: 85, type: 'freshwater' },
 
   // Eau de mer
-  { id: 'bass', fr: 'Bar (Loup)', en: 'European Bass', max: 100, type: 'saltwater' },
-  { id: 'gilthead', fr: 'Daurade Royale', en: 'Gilt-head Bream', max: 75, type: 'saltwater' },
-  { id: 'mackerel', fr: 'Maquereau', en: 'Mackerel', max: 50, type: 'saltwater' },
-  { id: 'pollock', fr: 'Lieu Jaune', en: 'Pollock', max: 100, type: 'saltwater' },
-  { id: 'bluefin', fr: 'Thon Rouge', en: 'Bluefin Tuna', max: 300, type: 'saltwater' },
-  { id: 'porgy', fr: 'Pagre', en: 'Red Porgy', max: 80, type: 'saltwater' },
-  { id: 'wrasse', fr: 'Vieille', en: 'Ballan Wrasse', max: 60, type: 'saltwater' },
-  { id: 'seabream', fr: 'Sar Commun', en: 'White Seabream', max: 45, type: 'saltwater' },
-  { id: 'sole', fr: 'Sole', en: 'Common Sole', max: 50, type: 'saltwater' },
-  { id: 'redmullet', fr: 'Rouget', en: 'Red Mullet', max: 40, type: 'saltwater' },
-  { id: 'bonito', fr: 'Bonite', en: 'Bonito', max: 90, type: 'saltwater' },
-  { id: 'whiting', fr: 'Merlan', en: 'Whiting', max: 60, type: 'saltwater' },
-  { id: 'conger', fr: 'Congre', en: 'Conger Eel', max: 250, type: 'saltwater' },
-  { id: 'ray', fr: 'Raie', en: 'Ray', max: 120, type: 'saltwater' },
-  { id: 'mullet', fr: 'Mulet', en: 'Mullet', max: 80, type: 'saltwater' },
+  { id: 'bass', fr: 'Bar (Loup)', en: 'European Bass', max: 100, limit: 115, type: 'saltwater' },
+  { id: 'gilthead', fr: 'Daurade Royale', en: 'Gilt-head Bream', max: 75, limit: 85, type: 'saltwater' },
+  { id: 'mackerel', fr: 'Maquereau', en: 'Mackerel', max: 50, limit: 60, type: 'saltwater' },
+  { id: 'pollock', fr: 'Lieu Jaune', en: 'Pollock', max: 100, limit: 115, type: 'saltwater' },
+  { id: 'bluefin', fr: 'Thon Rouge', en: 'Bluefin Tuna', max: 300, limit: 350, type: 'saltwater' },
+  { id: 'porgy', fr: 'Pagre', en: 'Red Porgy', max: 80, limit: 95, type: 'saltwater' },
+  { id: 'wrasse', fr: 'Vieille', en: 'Ballan Wrasse', max: 60, limit: 70, type: 'saltwater' },
+  { id: 'seabream', fr: 'Sar Commun', en: 'White Seabream', max: 45, limit: 55, type: 'saltwater' },
+  { id: 'sole', fr: 'Sole', en: 'Common Sole', max: 50, limit: 60, type: 'saltwater' },
+  { id: 'redmullet', fr: 'Rouget', en: 'Red Mullet', max: 40, limit: 50, type: 'saltwater' },
+  { id: 'bonito', fr: 'Bonite', en: 'Bonito', max: 90, limit: 105, type: 'saltwater' },
+  { id: 'whiting', fr: 'Merlan', en: 'Whiting', max: 60, limit: 75, type: 'saltwater' },
+  { id: 'conger', fr: 'Congre', en: 'Conger Eel', max: 250, limit: 300, type: 'saltwater' },
+  { id: 'ray', fr: 'Raie', en: 'Ray', max: 120, limit: 150, type: 'saltwater' },
+  { id: 'mullet', fr: 'Mulet', en: 'Mullet', max: 80, limit: 95, type: 'saltwater' },
 ];
 
 // Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
@@ -72,8 +75,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const isEditMode = !!initialData;
   
   // Validation State
-  const [isSizeInvalid, setIsSizeInvalid] = useState(false);
-  const [currentSpeciesMax, setCurrentSpeciesMax] = useState<number>(0);
+  const [validationStatus, setValidationStatus] = useState<'valid' | 'record' | 'error'>('valid');
+  const [currentSpeciesData, setCurrentSpeciesData] = useState<SpeciesData | null>(null);
 
   // Initialisation de la date
   const [catchDate, setCatchDate] = useState(() => {
@@ -118,18 +121,20 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   useEffect(() => {
     // Retrouver l'espèce sélectionnée dans notre DB
     const selectedSpecies = SPECIES_DB.find(s => s.fr === formData.species || s.en === formData.species);
+    setCurrentSpeciesData(selectedSpecies || null);
     
-    if (selectedSpecies) {
-      setCurrentSpeciesMax(selectedSpecies.max);
-      // Vérification de cohérence (Impossible d'avoir un poisson plus grand que le max biologique connu + marge erreur)
-      if (formData.length_cm > selectedSpecies.max) {
-        setIsSizeInvalid(true);
+    if (selectedSpecies && formData.length_cm > 0) {
+      if (formData.length_cm > selectedSpecies.limit) {
+          // Bloquant : Dépasse le plafond absolu de l'app
+          setValidationStatus('error');
+      } else if (formData.length_cm > selectedSpecies.max) {
+          // Warning : Dépasse le max biologique moyen, mais sous le plafond (Record potentiel)
+          setValidationStatus('record');
       } else {
-        setIsSizeInvalid(false);
+          setValidationStatus('valid');
       }
     } else {
-      setCurrentSpeciesMax(0);
-      setIsSizeInvalid(false);
+      setValidationStatus('valid');
     }
   }, [formData.species, formData.length_cm]);
 
@@ -228,9 +233,11 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
         return;
     }
     
-    // Blocage si taille incohérente
-    if (isSizeInvalid) {
-        alert(t.validation.sizeError.replace('{max}', currentSpeciesMax.toString()));
+    // Blocage UNIQUEMENT si taille impossible (error)
+    // On autorise si 'record' (Warning) ou 'valid'
+    if (validationStatus === 'error') {
+        const speciesName = currentSpeciesData ? (lang === 'fr' ? currentSpeciesData.fr : currentSpeciesData.en) : formData.species;
+        alert(t.validation.sizeImpossible.replace('{species}', speciesName));
         return;
     }
 
@@ -368,7 +375,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                   >
                     <option value="" disabled>{t.fields.speciesPlaceholder}</option>
                     
-                    <optgroup label={t.fields.groups.freshwater} className="bg-gray-800">
+                    <optgroup label={t.fields.groups.freshwater} className="bg-gray-800 text-white">
                       {SPECIES_DB.filter(s => s.type === 'freshwater').map(s => (
                         <option key={s.id} value={lang === 'fr' ? s.fr : s.en}>
                           {lang === 'fr' ? s.fr : s.en}
@@ -376,7 +383,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                       ))}
                     </optgroup>
 
-                    <optgroup label={t.fields.groups.saltwater} className="bg-gray-800">
+                    <optgroup label={t.fields.groups.saltwater} className="bg-gray-800 text-white">
                       {SPECIES_DB.filter(s => s.type === 'saltwater').map(s => (
                         <option key={s.id} value={lang === 'fr' ? s.fr : s.en}>
                            {lang === 'fr' ? s.fr : s.en}
@@ -397,16 +404,26 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                       type="number" 
                       value={formData.length_cm || ''} 
                       onChange={(e) => setFormData({...formData, length_cm: Number(e.target.value)})}
-                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${isSizeInvalid ? 'border-red-500 bg-red-900/20' : inputClass}`}
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 transition-colors ${
+                          validationStatus === 'error' ? 'border-red-500 bg-red-900/20' : 
+                          validationStatus === 'record' ? 'border-yellow-400 bg-yellow-900/20' : 
+                          inputClass
+                      }`}
                     />
                     {/* Validation Hints & Errors */}
-                    {isSizeInvalid ? (
+                    {validationStatus === 'error' && (
                         <p className="text-red-400 text-xs font-bold mt-1">
-                            {t.validation.sizeError.replace('{max}', currentSpeciesMax.toString())}
+                            {t.validation.sizeImpossible.replace('{species}', currentSpeciesData ? (lang === 'fr' ? currentSpeciesData.fr : currentSpeciesData.en) : formData.species)}
                         </p>
-                    ) : currentSpeciesMax > 0 && (
+                    )}
+                    {validationStatus === 'record' && (
+                        <p className="text-yellow-400 text-xs font-bold mt-1 animate-pulse">
+                            {t.validation.sizeRecord}
+                        </p>
+                    )}
+                    {validationStatus === 'valid' && currentSpeciesData && (
                         <p className="text-white/40 text-xs mt-1">
-                            {t.validation.sizeHint.replace('{max}', currentSpeciesMax.toString())}
+                            {t.validation.sizeHint.replace('{max}', currentSpeciesData.max.toString())}
                         </p>
                     )}
                   </div>
@@ -506,7 +523,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             {/* Save Button */}
             <button 
               onClick={handleSave}
-              disabled={isSaving || isSizeInvalid}
+              disabled={isSaving || validationStatus === 'error'}
               className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
             >
               {isSaving ? "Sauvegarde..." : (isEditMode ? t.update : t.save)}
