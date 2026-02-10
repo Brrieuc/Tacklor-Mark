@@ -14,6 +14,7 @@ export interface CatchRecord extends CatchAnalysis {
   complianceStatus: 'pending' | 'compliant' | 'to_declare' | 'legal_declaration_required';
   location?: string;
   aiAdvice?: string; // Conseil du Tacklor Guide AI
+  weatherSnapshot?: WeatherData; // Données météo Open-Meteo au moment de la prise
 }
 
 export interface UserProfile {

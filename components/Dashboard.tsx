@@ -2,10 +2,13 @@ import React from 'react';
 import { CatchRecord, Language, Theme, WeatherData } from '../types';
 import { GlassCard } from './GlassCard';
 import { translations } from '../i18n';
+import { User } from 'firebase/auth';
 
 interface DashboardProps {
   catches: CatchRecord[];
   onAddNew: () => void;
+  onLogin: () => void;
+  user: User | null;
   lang: Language;
   theme: Theme;
   weather: WeatherData | null;
@@ -39,7 +42,7 @@ const StatusBadge: React.FC<{ status: CatchRecord['complianceStatus']; lang: Lan
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, theme, weather, locationError, isScrolled }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
   const t = translations[lang].dashboard;
   const tWeather = translations[lang].weather;
   const isDark = theme === 'dark';
@@ -148,9 +151,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
                 )}
             </GlassCard>
 
-            {/* New Catch Button */}
+            {/* Action Button: New Catch OR Login */}
             <button
-            onClick={onAddNew}
+            onClick={user ? onAddNew : onLogin}
             className={`group relative rounded-full border transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-xl active:scale-95 bg-white/20 hover:bg-white/30 border-white/30 text-white ${textShadowClass} ${
                 isScrolled 
                 ? 'p-1.5 aspect-square flex items-center justify-center w-8 h-8 md:w-9 md:h-9' 
@@ -158,16 +161,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
             }`}
             >
             <div className={`flex items-center justify-center h-full transition-all duration-500`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className={`flex-shrink-0 transition-all duration-500 ${isScrolled ? 'w-5 h-5' : 'w-5 h-5'}`} viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
+                {user ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`flex-shrink-0 transition-all duration-500 ${isScrolled ? 'w-5 h-5' : 'w-5 h-5'}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`flex-shrink-0 transition-all duration-500 ${isScrolled ? 'w-5 h-5' : 'w-5 h-5'}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                )}
                 {/* Text collapse transition */}
                 <span className={`font-medium whitespace-nowrap overflow-hidden transition-all duration-500 ease-in-out ${
                     isScrolled 
                     ? 'max-w-0 opacity-0 ml-0' 
-                    : 'max-w-[150px] opacity-100 ml-2'
+                    : 'max-w-[200px] opacity-100 ml-2'
                 }`}>
-                    {t.newCatch}
+                    {user ? t.newCatch : t.connectToStart}
                 </span>
             </div>
             </button>
@@ -201,15 +210,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
             <GlassCard theme={theme} className="border-2 shadow-xl backdrop-blur-xl bg-white/20 border-white/30">
               <div className={`flex flex-col items-center p-6 text-white ${textShadowClass}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4 animate-bounce opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  {user ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  )}
                 </svg>
                 <h3 className="text-xl font-bold mb-2">Bienvenue sur Tacklor Mark !</h3>
-                <p className="text-lg opacity-90">Enregistrez votre première prise pour commencer l'aventure.</p>
+                <p className="text-lg opacity-90 mb-4">
+                    {user ? t.emptyState : t.guestState}
+                </p>
                 <button 
-                    onClick={onAddNew}
-                    className="mt-6 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-colors shadow-lg border border-white/20"
+                    onClick={user ? onAddNew : onLogin}
+                    className={`mt-2 px-8 py-3 font-bold rounded-full transition-colors shadow-lg border border-white/20 flex items-center gap-2 ${
+                        user 
+                        ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                        : 'bg-white text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
-                    Ajouter une prise
+                    {user ? (
+                        <>
+                            <span>Ajouter une prise</span>
+                        </>
+                    ) : (
+                        <>
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="G" />
+                            <span>Connexion Google</span>
+                        </>
+                    )}
                 </button>
               </div>
             </GlassCard>

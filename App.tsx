@@ -3,7 +3,7 @@ import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
 import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
-import { getLogbook, saveToLogbook } from './services/storageService';
+import { fetchUserCaptures, saveCapture } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
 import { auth, signInWithGoogle, logoutUser } from './services/firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -50,22 +50,26 @@ export default function App() {
                 setUser(currentUser);
                 setAuthLoading(false);
                 
-                // Fetch Data based on Auth State
-                setDataLoading(true);
-                try {
-                    const data = await getLogbook(currentUser?.uid);
-                    setCatches(data);
-                } catch (err) {
-                    console.error("Error fetching initial data", err);
-                } finally {
-                    setDataLoading(false);
+                if (currentUser) {
+                    // Si connecté : on charge les données Firebase de l'utilisateur
+                    setDataLoading(true);
+                    try {
+                        const data = await fetchUserCaptures(currentUser.uid);
+                        setCatches(data);
+                    } catch (err) {
+                        console.error("Error fetching initial data", err);
+                    } finally {
+                        setDataLoading(false);
+                    }
+                } else {
+                    // Si déconnecté : on vide les données pour la confidentialité
+                    setCatches([]);
                 }
             });
         } else {
-            // Fallback for Guest Mode if Firebase fails
+            // Si Firebase n'est pas dispo du tout
             setAuthLoading(false);
-            const data = await getLogbook(null);
-            setCatches(data);
+            setCatches([]);
         }
     };
 
@@ -91,13 +95,18 @@ export default function App() {
   }, []);
 
   const handleSaveNewCatch = async (record: CatchRecord) => {
+    if (!user) {
+        alert("Veuillez vous connecter pour sauvegarder votre prise.");
+        return;
+    }
+
     setDataLoading(true);
     try {
-        const updatedLogbook = await saveToLogbook(record, user?.uid);
+        const updatedLogbook = await saveCapture(record, user.uid);
         setCatches(updatedLogbook);
         setView(ViewState.DASHBOARD);
     } catch (e) {
-        alert("Erreur lors de la sauvegarde.");
+        alert("Erreur lors de la sauvegarde sur le cloud.");
     } finally {
         setDataLoading(false);
     }
@@ -107,8 +116,9 @@ export default function App() {
       try {
           await signInWithGoogle();
           // onAuthStateChanged will handle the rest
-      } catch (e) {
-          alert("Erreur de connexion Google");
+      } catch (e: any) {
+          console.error("Login Error:", e);
+          alert(`Erreur de connexion Google : ${e.message || e.code || "Erreur inconnue"}`);
       }
   };
 
@@ -220,7 +230,11 @@ export default function App() {
         {view === ViewState.DASHBOARD && (
           <Dashboard 
             catches={catches} 
-            onAddNew={() => setView(ViewState.NEW_CATCH)} 
+            user={user}
+            onAddNew={() => {
+                if(user) setView(ViewState.NEW_CATCH);
+            }} 
+            onLogin={handleLogin}
             lang={lang}
             theme={theme}
             weather={weatherData}

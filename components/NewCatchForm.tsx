@@ -137,12 +137,13 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
         const newRecord: CatchRecord = {
           ...formData,
-          id: crypto.randomUUID(),
+          id: crypto.randomUUID(), // Temporaire, Firestore générera son propre ID
           date: new Date().toISOString(),
           imageUrl: imageToSave,
           complianceStatus: complianceStatus,
           aiAdvice: aiAdvice,
-          location: formData.spot_type // Store roughly
+          location: formData.spot_type, // Store roughly
+          weatherSnapshot: weather || undefined // Sauvegarde de l'objet météo complet
         };
         onSave(newRecord);
     } catch (error) {

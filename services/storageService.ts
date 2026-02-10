@@ -1,9 +1,6 @@
-import { CatchRecord, UserProfile } from "../types";
+import { CatchRecord } from "../types";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, query, orderBy, where } from "firebase/firestore";
-
-const LOGBOOK_KEY = 'tacklor_logbook';
-const USER_KEY = 'tacklor_user_profile';
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp } from "firebase/firestore";
 
 // --- Image Compression Logic ---
 export const compressImage = (file: File): Promise<string> => {
@@ -47,104 +44,70 @@ export const compressImage = (file: File): Promise<string> => {
   });
 };
 
-// --- Hybrid Logbook Persistence (Async) ---
+// --- Firestore Persistence ---
 
 /**
- * Récupère le carnet de pêche.
- * Si userId est présent, fetch depuis Firebase (Collection 'captures'). Sinon, LocalStorage.
+ * Récupère uniquement les captures de l'utilisateur connecté depuis la collection "captures".
  */
-export const getLogbook = async (userId?: string | null): Promise<CatchRecord[]> => {
-  // 1. Mode Firebase (Connecté)
-  if (userId && db) {
-      try {
-          const catchesRef = collection(db, "captures");
-          // Requête sécurisée : On ne récupère que les captures où userId correspond
-          const q = query(
-              catchesRef, 
-              where("userId", "==", userId),
-              orderBy("date", "desc")
-          );
-          
-          const querySnapshot = await getDocs(q);
-          
-          const records: CatchRecord[] = [];
-          querySnapshot.forEach((doc) => {
-              // On fusionne l'ID du doc Firestore avec les données
-              const data = doc.data();
-              // On cast en CatchRecord (le userId est filtré mais non affiché dans l'UI)
-              records.push({ ...data, id: doc.id } as CatchRecord);
-          });
-          return records;
-      } catch (e) {
-          console.error("Erreur lecture Firestore:", e);
-          // Si l'erreur est liée aux indexes manquants (fréquent avec where + orderBy),
-          // cela s'affichera dans la console avec un lien pour créer l'index.
-          return [];
-      }
+export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRecord[]> => {
+  // Sécurité côté client : Si pas d'ID, on retourne vide immédiatement.
+  if (!userId || !db) {
+      return [];
   }
 
-  // 2. Mode Invité (LocalStorage)
-  return new Promise((resolve) => {
-      try {
-        const stored = localStorage.getItem(LOGBOOK_KEY);
-        resolve(stored ? JSON.parse(stored) : []);
-      } catch (e) {
-        console.error("Failed to load local logbook", e);
-        resolve([]);
-      }
-  });
-};
-
-/**
- * Sauvegarde une prise.
- * Si userId est présent, addDoc vers Firebase (Collection 'captures'). Sinon, LocalStorage.
- * Retourne la liste mise à jour.
- */
-export const saveToLogbook = async (newCatch: CatchRecord, userId?: string | null): Promise<CatchRecord[]> => {
-  // 1. Mode Firebase (Connecté)
-  if (userId && db) {
-      try {
-          const catchesRef = collection(db, "captures");
-          
-          // On ajoute le userId au document pour la sécurité
-          const docData = {
-              ...newCatch,
-              userId: userId // Champ essentiel pour les Security Rules
-          };
-
-          await addDoc(catchesRef, docData);
-          
-          // On re-fetch pour avoir la liste à jour et synchronisée
-          return await getLogbook(userId);
-      } catch (e) {
-          console.error("Erreur écriture Firestore:", e);
-          throw e;
-      }
-  }
-
-  // 2. Mode Invité (LocalStorage)
-  return new Promise((resolve) => {
-      try {
-        const currentStored = localStorage.getItem(LOGBOOK_KEY);
-        const current = currentStored ? JSON.parse(currentStored) : [];
-        const updated = [newCatch, ...current];
-        localStorage.setItem(LOGBOOK_KEY, JSON.stringify(updated));
-        resolve(updated);
-      } catch (e) {
-        console.error("LocalStorage error", e);
-        // En cas d'erreur (quota), on renvoie ce qu'on a
-        const stored = localStorage.getItem(LOGBOOK_KEY);
-        resolve(stored ? JSON.parse(stored) : []);
-      }
-  });
-};
-
-// --- User Profile Persistence ---
-export const getLocalUserProfile = (): UserProfile => {
   try {
-    const stored = localStorage.getItem(USER_KEY);
-    return stored ? JSON.parse(stored) : { name: "Invité", avatarUrl: "" };
+      const catchesRef = collection(db, "captures");
+      // Requête : Filtrer par userId et trier par date décroissante
+      const q = query(
+          catchesRef, 
+          where("userId", "==", userId),
+          orderBy("date", "desc")
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      const records: CatchRecord[] = [];
+      querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // On cast les données Firestore vers notre type CatchRecord
+          // doc.id devient l'identifiant officiel
+          records.push({ ...data, id: doc.id } as CatchRecord);
+      });
+      return records;
   } catch (e) {
-    return { name: "Invité", avatarUrl: "" };
+      console.error("Erreur lors de la récupération des captures:", e);
+      return [];
+  }
+};
+
+/**
+ * Sauvegarde une prise dans la collection "captures" de Firebase.
+ * Utilise serverTimestamp pour un horodatage fiable.
+ */
+export const saveCapture = async (newCatch: CatchRecord, userId?: string | null): Promise<CatchRecord[]> => {
+  if (!userId || !db) {
+      throw new Error("Utilisateur non authentifié.");
+  }
+
+  try {
+      const catchesRef = collection(db, "captures");
+      
+      // On sépare l'ID temporaire généré localement (qui sera inutile) des autres données
+      const { id, ...dataToSave } = newCatch;
+
+      // Construction du document à sauvegarder
+      const docData = {
+          ...dataToSave,
+          userId: userId, 
+          createdAt: serverTimestamp() // Horodatage serveur automatique
+      };
+
+      await addDoc(catchesRef, docData);
+      
+      // On recharge la liste mise à jour pour l'affichage
+      return await fetchUserCaptures(userId);
+  } catch (e) {
+      console.error("Erreur lors de la sauvegarde de la capture:", e);
+      throw e;
   }
 };
