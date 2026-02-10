@@ -192,7 +192,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
         </GlassCard>
         <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
           <span className="text-5xl font-extrabold text-white">
-            {catches.reduce((acc, curr) => acc + curr.weight_kg, 0).toFixed(1)} <span className="text-2xl font-normal opacity-60">kg</span>
+            {catches.reduce((acc, curr) => acc + curr.weight_kg, 0).toFixed(3)} <span className="text-2xl font-normal opacity-60">kg</span>
           </span>
           <span className="text-sm font-bold uppercase tracking-widest mt-2 text-white/70">{t.totalWeight}</span>
         </GlassCard>
@@ -296,7 +296,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
                   </div>
                   <div>
                     <span className="text-xs font-semibold uppercase tracking-wider block text-white/60">{t.labels.weight}</span>
-                    <span className="text-xl font-bold text-white">{catchItem.weight_kg} kg</span>
+                    <span className="text-xl font-bold text-white">{catchItem.weight_kg.toFixed(3)} kg</span>
                   </div>
                 </div>
 

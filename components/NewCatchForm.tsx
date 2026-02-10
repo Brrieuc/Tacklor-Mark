@@ -274,6 +274,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <label className={labelClass}>{t.fields.weight}</label>
                     <input 
                       type="number" 
+                      step="0.001"
                       value={formData.weight_kg || ''} 
                       onChange={(e) => setFormData({...formData, weight_kg: Number(e.target.value)})}
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
