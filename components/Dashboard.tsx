@@ -3,7 +3,7 @@ import { CatchRecord, Language, Theme, WeatherData } from '../types';
 import { GlassCard } from './GlassCard';
 import { translations } from '../i18n';
 import { User } from 'firebase/auth';
-import { TrophyModal } from './TrophyModal';
+import { TrophyModal, TrophyStats } from './TrophyModal';
 
 interface DashboardProps {
   catches: CatchRecord[];
@@ -49,7 +49,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
   const [selectedCatch, setSelectedCatch] = useState<CatchRecord | null>(null);
   
   // State for Trophy Modals
-  const [trophyModalType, setTrophyModalType] = useState<'weight' | 'length' | null>(null);
+  const [trophyModalType, setTrophyModalType] = useState<'weight' | 'length' | 'gallery' | null>(null);
 
   const t = translations[lang].dashboard;
   const tWeather = translations[lang].weather;
@@ -61,6 +61,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
   // Calculs statistiques
   const totalLengthCm = catches.reduce((acc, curr) => acc + curr.length_cm, 0);
   const totalWeightKg = catches.reduce((acc, curr) => acc + curr.weight_kg, 0);
+  
+  // Calculs pour les nouveaux badges
+  const totalCount = catches.length;
+  // Set des espèces normalisées (lowercase + trim)
+  const uniqueSpeciesCount = new Set(catches.map(c => c.species.toLowerCase().trim())).size;
+  // Prises de nuit (entre 22h et 5h du matin)
+  const nightCatchCount = catches.filter(c => {
+      const h = new Date(c.date).getHours();
+      return h >= 22 || h < 5;
+  }).length;
+
+  // Objet stats complet pour la modale
+  const trophyStats: TrophyStats = {
+      weight: totalWeightKg,
+      length: totalLengthCm,
+      count: totalCount,
+      speciesCount: uniqueSpeciesCount,
+      nightCount: nightCatchCount
+  };
 
   const totalLengthDisplay = totalLengthCm >= 100 
     ? `${(totalLengthCm / 100).toFixed(2)} m` 
@@ -74,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
           <TrophyModal 
             isOpen={true}
             onClose={() => setTrophyModalType(null)}
-            currentValue={trophyModalType === 'weight' ? totalWeightKg : totalLengthCm}
+            stats={trophyStats}
             type={trophyModalType}
             lang={lang}
             theme={theme}
@@ -152,7 +171,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
                         </div>
                         <div className={`w-px bg-white/30 transition-all duration-500 ${isScrolled ? 'h-3 mx-0.5' : 'h-6 mx-0 md:mx-1'}`}></div>
                         <div className={`flex items-center justify-center transition-all duration-500 ${textShadowClass}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-blue-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-blue-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-4 w-4' : 'h-5 w-4'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                              <div className={`flex flex-col leading-none overflow-hidden transition-all duration-500 ease-in-out ${
@@ -200,7 +219,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
       </div>
 
       {/* Stats Overview */}
-      <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 ${textShadowClass}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-2 ${textShadowClass}`}>
         <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
           <span className="text-4xl md:text-5xl font-extrabold text-white">{catches.length}</span>
           <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalCatches}</span>
@@ -247,6 +266,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
           </span>
           <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.verifiedCompliant}</span>
         </GlassCard>
+      </div>
+      
+      {/* Button to view all badges (Gallery) */}
+      <div className="flex justify-center mb-6">
+          <button 
+            onClick={() => setTrophyModalType('gallery')}
+            className="flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 transition-all text-white/80 hover:text-white text-sm font-bold uppercase tracking-wide shadow-md"
+          >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              {t.actions.viewAllBadges}
+          </button>
       </div>
 
       {/* Catches Grid */}
