@@ -5,6 +5,8 @@ import { CatchRecord, ViewState, Language, Theme, UserProfile, WeatherData } fro
 import { translations } from './i18n';
 import { getLogbook, saveToLogbook, getUserProfile } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
+import { CUSTOM_API_KEY_STORAGE, resetAiClient } from './services/geminiService';
+import { GlassCard } from './components/GlassCard';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
@@ -14,6 +16,11 @@ export default function App() {
   
   const [lang, setLang] = useState<Language>('fr');
   const [theme, setTheme] = useState<Theme>('dark');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // API Key Management State
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [customKey, setCustomKey] = useState('');
 
   // Weather State
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -31,6 +38,10 @@ export default function App() {
       const loadedProfile = getUserProfile();
       setCatches(loadedCatches);
       setUserProfile(loadedProfile);
+      
+      const storedKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
+      if (storedKey) setCustomKey(storedKey);
+
     } catch (error) {
       console.error("App Component: Error loading storage", error);
     }
@@ -47,12 +58,29 @@ export default function App() {
     };
     initWeather();
 
+    // 3. Scroll Listener for Shadow
+    const handleScroll = () => {
+        setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+
   }, []);
 
   const handleSaveNewCatch = (record: CatchRecord) => {
     const updatedLogbook = saveToLogbook(record);
     setCatches(updatedLogbook);
     setView(ViewState.DASHBOARD);
+  };
+
+  const handleSaveApiKey = () => {
+      if (customKey.trim()) {
+          localStorage.setItem(CUSTOM_API_KEY_STORAGE, customKey.trim());
+      } else {
+          localStorage.removeItem(CUSTOM_API_KEY_STORAGE);
+      }
+      resetAiClient(); // Force reload of AI client
+      setShowKeyModal(false);
   };
 
   const t = translations[lang];
@@ -70,10 +98,16 @@ export default function App() {
       }}
     >
       {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 px-4 sm:px-6 py-4 mb-6">
+      <nav className="sticky top-0 z-[100] px-4 sm:px-6 py-4 mb-2">
         <div className="max-w-7xl mx-auto">
-          {/* Navbar Background: Text always White. Background matches card logic (darker) */}
-          <div className={`rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between shadow-2xl backdrop-blur-xl transition-colors duration-300 ${isDark ? 'bg-black/40 border border-white/10' : 'bg-black/20 border border-white/20'}`}>
+          {/* Navbar Background: Dynamic Shadow based on scroll */}
+          <div 
+            className={`
+                rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between backdrop-blur-xl transition-all duration-500
+                ${isDark ? 'bg-black/40 border-white/10' : 'bg-black/20 border-white/20'}
+                ${isScrolled ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b' : 'shadow-2xl border'}
+            `}
+          >
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView(ViewState.DASHBOARD)}>
                <img 
                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" 
@@ -90,7 +124,7 @@ export default function App() {
               >
                 {lang}
               </button>
-
+              
               <button 
                 onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                 className={`p-1.5 rounded-full border backdrop-blur-md transition-all bg-white/20 hover:bg-white/30 border-white/30 text-white/90 ${textShadowClass}`}
@@ -105,6 +139,17 @@ export default function App() {
                         <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                     </svg>
                 )}
+              </button>
+
+              {/* API Key Button Moved Here */}
+              <button
+                onClick={() => setShowKeyModal(true)}
+                className={`p-1.5 rounded-full border backdrop-blur-md transition-all bg-white/20 hover:bg-white/30 border-white/30 text-white/90 ${textShadowClass}`}
+                title="Configurer clé API Gemini"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
               </button>
               
                <div className={`hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border text-white/80 bg-black/20 border-white/10 ${textShadowClass}`}>
@@ -132,6 +177,7 @@ export default function App() {
             theme={theme}
             weather={weatherData}
             locationError={locationError}
+            isScrolled={isScrolled}
           />
         )}
         
@@ -145,6 +191,40 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* API Key Modal */}
+      {showKeyModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+              <GlassCard theme={theme} className="w-full max-w-md space-y-4">
+                  <h3 className="text-xl font-bold text-white drop-shadow-md">Configuration Gemini API</h3>
+                  <p className="text-sm text-white/80">
+                      Entrez votre clé API Google Gemini personnelle pour utiliser l'analyse d'image. 
+                      <br/><span className="text-xs opacity-60">(La clé est stockée uniquement dans votre navigateur)</span>
+                  </p>
+                  <input 
+                      type="text" 
+                      value={customKey}
+                      onChange={(e) => setCustomKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <div className="flex gap-3 justify-end pt-2">
+                      <button 
+                          onClick={() => setShowKeyModal(false)}
+                          className="px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                      >
+                          Annuler
+                      </button>
+                      <button 
+                          onClick={handleSaveApiKey}
+                          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg"
+                      >
+                          Sauvegarder
+                      </button>
+                  </div>
+              </GlassCard>
+          </div>
+      )}
     </div>
   );
 }

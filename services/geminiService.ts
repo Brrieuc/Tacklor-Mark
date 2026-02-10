@@ -1,9 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CatchAnalysis, Language } from "../types";
 
+export const CUSTOM_API_KEY_STORAGE = 'tacklor_custom_api_key';
+
 // Fonction utilitaire sécurisée pour récupérer la clé API
+// Priorité : 1. LocalStorage (Clé utilisateur) -> 2. Process.env (Clé développeur)
 const getApiKey = () => {
   try {
+    const customKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
+    if (customKey) return customKey;
+
     // @ts-ignore
     if (typeof process !== 'undefined' && process.env) {
       // @ts-ignore
@@ -17,6 +23,11 @@ const getApiKey = () => {
 
 // Instance lazy-loaded pour éviter les erreurs top-level
 let aiInstance: GoogleGenAI | null = null;
+
+// Permet de forcer la réinitialisation si l'utilisateur change sa clé
+export const resetAiClient = () => {
+    aiInstance = null;
+};
 
 const getAiClient = (): GoogleGenAI | null => {
   if (aiInstance) return aiInstance;

@@ -14,6 +14,9 @@ interface NewCatchFormProps {
   weather: WeatherData | null;
 }
 
+// Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
+const DEFAULT_IMAGE = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png";
+
 export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather }) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -21,14 +24,19 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSaving, setIsSaving] = useState(false); 
   
-  const [analysis, setAnalysis] = useState<CatchAnalysis | null>(null);
+  // Initialisation avec des valeurs vides pour permettre la saisie manuelle immédiate
+  const [formData, setFormData] = useState<CatchAnalysis>({
+    species: '',
+    length_cm: 0,
+    weight_kg: 0,
+    is_sensitive_species: false,
+    technique: '',
+    spot_type: ''
+  });
+
   const [complianceStatus, setComplianceStatus] = useState<CatchRecord['complianceStatus']>('pending');
   const [complianceMessage, setComplianceMessage] = useState<string>('');
   const [aiAdvice, setAiAdvice] = useState<string>('');
-
-  // Additional fields state
-  const [manualTechnique, setManualTechnique] = useState('');
-  const [manualSpot, setManualSpot] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -37,16 +45,27 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   // Style harmonisé : Texte blanc + Ombre portée adoucie
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
-  
-  // Inputs : Fond sombre semi-transparent pour que le texte blanc ressorte bien
   const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
 
   // Auto-fill weather and GPS if available on mount
   useEffect(() => {
-    if (weather) {
-        setManualSpot(`GPS: ${weather.lat.toFixed(4)}, ${weather.lon.toFixed(4)}`);
+    if (weather && !formData.spot_type) {
+        setFormData(prev => ({
+            ...prev,
+            spot_type: `GPS: ${weather.lat.toFixed(4)}, ${weather.lon.toFixed(4)}`
+        }));
     }
   }, [weather]);
+
+  // Déclenche la vérification de conformité lorsque les données changent (Debounce simple)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        if (formData.species) {
+            handleRecFishingCheck(formData);
+        }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [formData.species, formData.length_cm, formData.is_sensitive_species, lang]);
 
   useEffect(() => {
     return () => {
@@ -59,10 +78,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
-      setAnalysis(null);
-      setComplianceStatus('pending');
-      setComplianceMessage('');
-      setAiAdvice('');
+      // On ne réinitialise pas formData ici pour permettre à l'utilisateur de garder ce qu'il a tapé
+      // Sauf s'il veut lancer l'analyse IA ensuite qui écrasera les champs
     }
   };
 
@@ -72,12 +89,15 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     setIsAnalyzing(true);
     try {
       const result = await analyzeCatchImage(file, lang);
-      setAnalysis(result);
-      
-      handleRecFishingCheck(result);
-
+      // Fusionner avec les données existantes ou écraser
+      setFormData(prev => ({
+          ...result,
+          // Si l'IA ne trouve pas de technique/spot, on garde ce que l'utilisateur a peut-être déjà mis
+          technique: result.technique || prev.technique,
+          spot_type: result.spot_type || prev.spot_type
+      }));
     } catch (error) {
-      alert("Failed to analyze image. Please try again.");
+      alert("Impossible d'analyser l'image. Veuillez réessayer.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -89,7 +109,10 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const result: ProcessingResult = await processFishingData(data, lang);
       setComplianceStatus(result.status);
       setComplianceMessage(result.message);
-      setAiAdvice(result.advice);
+      // On met à jour le conseil seulement s'il est vide ou si c'est l'IA qui vient de tourner
+      if (!aiAdvice || isAnalyzing) {
+          setAiAdvice(result.advice);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -98,29 +121,33 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   };
 
   const handleSave = async () => {
-    if (!analysis || !file) return;
+    // Validation minimale
+    if (!formData.species) {
+        alert(lang === 'fr' ? "Veuillez entrer au moins une espèce." : "Please enter at least a species.");
+        return;
+    }
 
     setIsSaving(true);
     try {
-        const compressedImageBase64 = await compressImage(file);
+        let imageToSave = DEFAULT_IMAGE;
         
-        let finalSpot = analysis.spot_type || manualSpot;
+        if (file) {
+            imageToSave = await compressImage(file);
+        }
 
         const newRecord: CatchRecord = {
-          ...analysis,
-          technique: analysis.technique || manualTechnique,
-          spot_type: finalSpot,
+          ...formData,
           id: crypto.randomUUID(),
           date: new Date().toISOString(),
-          imageUrl: compressedImageBase64,
+          imageUrl: imageToSave,
           complianceStatus: complianceStatus,
           aiAdvice: aiAdvice,
-          location: manualSpot // Store GPS coords
+          location: formData.spot_type // Store roughly
         };
         onSave(newRecord);
     } catch (error) {
         console.error("Error preparing save:", error);
-        alert("Erreur lors de la sauvegarde de l'image.");
+        alert("Erreur lors de la sauvegarde.");
         setIsSaving(false);
     }
   };
@@ -134,7 +161,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           </svg>
           <span className="font-medium">{t.back}</span>
         </button>
-        <h2 className={`text-2xl font-bold text-white bg-white/10 px-4 py-1 rounded-lg ${textShadowClass}`}>{t.title}</h2>
+        {/* Titre "Nouvelle Entrée" supprimé ici comme demandé */}
       </div>
 
       <GlassCard theme={theme} className="space-y-8">
@@ -147,34 +174,33 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             <>
               <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
               <button 
-                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFile(null); setAnalysis(null); }}
+                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFile(null); }}
                 className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full hover:bg-black/70 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
-              {!analysis && (
-                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
-                        disabled={isAnalyzing}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full backdrop-blur-md shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
-                    >
-                        {isAnalyzing ? (
-                             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                             </svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                            </svg>
-                        )}
-                        <span className="font-bold">{isAnalyzing ? t.analyzing : t.analyze}</span>
-                    </button>
-                 </div>
-              )}
+              
+               <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+                  <button
+                      onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
+                      disabled={isAnalyzing}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full backdrop-blur-md shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                  >
+                      {isAnalyzing ? (
+                           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                           </svg>
+                      ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                          </svg>
+                      )}
+                      <span className="font-bold">{isAnalyzing ? t.analyzing : t.analyze}</span>
+                  </button>
+               </div>
             </>
           ) : (
             <div className="text-center p-6 text-white drop-shadow-md">
@@ -195,16 +221,16 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           />
         </div>
 
-        {/* AI Results Section */}
-        {analysis && (
-          <div className="animate-fade-in space-y-6">
+        {/* Formulaire Toujours Visible */}
+        <div className="animate-fade-in space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className={labelClass}>{t.fields.species}</label>
                 <input 
                   type="text" 
-                  value={analysis.species} 
-                  onChange={(e) => setAnalysis({...analysis, species: e.target.value})}
+                  value={formData.species} 
+                  onChange={(e) => setFormData({...formData, species: e.target.value})}
+                  placeholder="ex: Bar, Truite..."
                   className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                 />
               </div>
@@ -213,8 +239,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <label className={labelClass}>{t.fields.length}</label>
                     <input 
                       type="number" 
-                      value={analysis.length_cm} 
-                      onChange={(e) => setAnalysis({...analysis, length_cm: Number(e.target.value)})}
+                      value={formData.length_cm || ''} 
+                      onChange={(e) => setFormData({...formData, length_cm: Number(e.target.value)})}
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
                   </div>
@@ -222,8 +248,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <label className={labelClass}>{t.fields.weight}</label>
                     <input 
                       type="number" 
-                      value={analysis.weight_kg} 
-                      onChange={(e) => setAnalysis({...analysis, weight_kg: Number(e.target.value)})}
+                      value={formData.weight_kg || ''} 
+                      onChange={(e) => setFormData({...formData, weight_kg: Number(e.target.value)})}
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
                   </div>
@@ -236,11 +262,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <label className={labelClass}>{t.fields.technique}</label>
                     <input 
                       type="text" 
-                      value={analysis.technique || manualTechnique} 
-                      onChange={(e) => {
-                          setAnalysis({...analysis, technique: e.target.value});
-                          setManualTechnique(e.target.value);
-                      }}
+                      value={formData.technique || ''} 
+                      onChange={(e) => setFormData({...formData, technique: e.target.value})}
                       placeholder="e.g. Spinning, Surfcasting..."
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
@@ -249,15 +272,12 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                     <label className={labelClass}>{t.fields.spot}</label>
                     <input 
                       type="text" 
-                      value={analysis.spot_type || manualSpot} 
-                      onChange={(e) => {
-                          setAnalysis({...analysis, spot_type: e.target.value});
-                          setManualSpot(e.target.value);
-                      }}
+                      value={formData.spot_type || ''} 
+                      onChange={(e) => setFormData({...formData, spot_type: e.target.value})}
                       placeholder="e.g. River, Open Sea..."
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
-                    {weather && !analysis.spot_type && (
+                    {weather && !formData.spot_type && (
                          <p className="text-xs text-green-300 mt-1 flex items-center gap-1 font-medium drop-shadow-sm">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -334,7 +354,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
               {isSaving ? "Sauvegarde..." : t.save}
             </button>
           </div>
-        )}
       </GlassCard>
     </div>
   );

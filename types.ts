@@ -29,6 +29,7 @@ export interface WeatherData {
   desc: string;
   lat: number;
   lon: number;
+  locationName?: string; // Nom de la ville/lieu
 }
 
 export enum ViewState {
