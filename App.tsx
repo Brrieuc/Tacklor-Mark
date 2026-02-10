@@ -5,10 +5,8 @@ import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
 import { getLogbook, saveToLogbook } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
-import { CUSTOM_API_KEY_STORAGE, resetAiClient } from './services/geminiService';
 import { auth, signInWithGoogle, logoutUser } from './services/firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { GlassCard } from './components/GlassCard';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
@@ -22,10 +20,6 @@ export default function App() {
   const [lang, setLang] = useState<Language>('fr');
   const [theme, setTheme] = useState<Theme>('dark');
   const [isScrolled, setIsScrolled] = useState(false);
-
-  // API Key Management State
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [customKey, setCustomKey] = useState('');
 
   // Weather State
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -41,10 +35,6 @@ export default function App() {
     let unsubscribe = () => {};
 
     const init = async () => {
-        // Load API Key
-        const storedKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
-        if (storedKey) setCustomKey(storedKey);
-
         // Fetch Weather
         const weather = await fetchCurrentWeather();
         if (weather) {
@@ -122,16 +112,6 @@ export default function App() {
       }
   };
 
-  const handleSaveApiKey = () => {
-      if (customKey.trim()) {
-          localStorage.setItem(CUSTOM_API_KEY_STORAGE, customKey.trim());
-      } else {
-          localStorage.removeItem(CUSTOM_API_KEY_STORAGE);
-      }
-      resetAiClient(); 
-      setShowKeyModal(false);
-  };
-
   const t = translations[lang];
   const isDark = theme === 'dark';
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
@@ -190,16 +170,6 @@ export default function App() {
                 )}
               </button>
 
-              <button
-                onClick={() => setShowKeyModal(true)}
-                className={`p-1.5 rounded-full border backdrop-blur-md transition-all bg-white/20 hover:bg-white/30 border-white/30 text-white/90 ${textShadowClass}`}
-                title="Configurer clé API Gemini"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-              </button>
-               
                {/* Authentication UI */}
                {authLoading ? (
                    <div className="w-9 h-9 rounded-full bg-white/20 animate-pulse"></div>
@@ -269,40 +239,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* API Key Modal */}
-      {showKeyModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-              <GlassCard theme={theme} className="w-full max-w-md space-y-4">
-                  <h3 className="text-xl font-bold text-white drop-shadow-md">Configuration Gemini API</h3>
-                  <p className="text-sm text-white/80">
-                      Entrez votre clé API Google Gemini personnelle pour utiliser l'analyse d'image. 
-                      <br/><span className="text-xs opacity-60">(La clé est stockée uniquement dans votre navigateur)</span>
-                  </p>
-                  <input 
-                      type="text" 
-                      value={customKey}
-                      onChange={(e) => setCustomKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                  <div className="flex gap-3 justify-end pt-2">
-                      <button 
-                          onClick={() => setShowKeyModal(false)}
-                          className="px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-                      >
-                          Annuler
-                      </button>
-                      <button 
-                          onClick={handleSaveApiKey}
-                          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg"
-                      >
-                          Sauvegarder
-                      </button>
-                  </div>
-              </GlassCard>
-          </div>
-      )}
     </div>
   );
 }

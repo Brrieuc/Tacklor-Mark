@@ -1,15 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CatchAnalysis, Language } from "../types";
 
-export const CUSTOM_API_KEY_STORAGE = 'tacklor_custom_api_key';
-
 // Instance lazy-loaded pour éviter les erreurs top-level
 let aiInstance: GoogleGenAI | null = null;
-
-// Permet de forcer la réinitialisation si l'utilisateur change sa clé
-export const resetAiClient = () => {
-    aiInstance = null;
-};
 
 const getAiClient = (): GoogleGenAI | null => {
   if (aiInstance) return aiInstance;

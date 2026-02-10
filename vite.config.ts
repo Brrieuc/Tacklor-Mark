@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Charge les variables d'environnement basées sur le mode actuel
-  const env = loadEnv(mode, (process as any).cwd(), '');
+  // Fix: Utilisation de '.' au lieu de process.cwd() pour éviter l'erreur de type sur process.cwd
+  const env = loadEnv(mode, '.', '');
 
   return {
     plugins: [react()],
