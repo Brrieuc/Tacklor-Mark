@@ -1,6 +1,6 @@
 import { CatchRecord } from "../types";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
 
 // --- Image Compression Logic ---
 export const compressImage = (file: File): Promise<string> => {
@@ -109,5 +109,18 @@ export const saveCapture = async (newCatch: CatchRecord, userId?: string | null)
   } catch (e) {
       console.error("Erreur lors de la sauvegarde de la capture:", e);
       throw e;
+  }
+};
+
+/**
+ * Supprime une prise de la collection "captures" de Firebase.
+ */
+export const deleteCapture = async (catchId: string): Promise<void> => {
+  if (!db) throw new Error("Firestore not initialized");
+  try {
+    await deleteDoc(doc(db, "captures", catchId));
+  } catch (e) {
+    console.error("Erreur lors de la suppression du document:", e);
+    throw e;
   }
 };

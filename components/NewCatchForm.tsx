@@ -31,6 +31,9 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     return new Date(now.getTime() - offset).toISOString().slice(0, 16);
   });
 
+  // Nouveau champ pour l'adresse / lieu géographique manuel
+  const [location, setLocation] = useState('');
+
   // Initialisation avec des valeurs vides pour permettre la saisie manuelle immédiate
   const [formData, setFormData] = useState<CatchAnalysis>({
     species: '',
@@ -54,13 +57,11 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
   const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
 
-  // Auto-fill weather and GPS if available on mount
+  // Auto-fill Location if weather contains location name (Reverse Geo)
+  // On ne remplit que si le champ est vide pour ne pas écraser une saisie utilisateur lors d'un re-render
   useEffect(() => {
-    if (weather && !formData.spot_type) {
-        setFormData(prev => ({
-            ...prev,
-            spot_type: `GPS: ${weather.lat.toFixed(4)}, ${weather.lon.toFixed(4)}`
-        }));
+    if (weather?.locationName && !location) {
+        setLocation(weather.locationName);
     }
   }, [weather]);
 
@@ -85,8 +86,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
-      // On ne réinitialise pas formData ici pour permettre à l'utilisateur de garder ce qu'il a tapé
-      // Sauf s'il veut lancer l'analyse IA ensuite qui écrasera les champs
     }
   };
 
@@ -96,10 +95,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     setIsAnalyzing(true);
     try {
       const result = await analyzeCatchImage(file, lang);
-      // Fusionner avec les données existantes ou écraser
       setFormData(prev => ({
           ...result,
-          // Si l'IA ne trouve pas de technique/spot, on garde ce que l'utilisateur a peut-être déjà mis
           technique: result.technique || prev.technique,
           spot_type: result.spot_type || prev.spot_type
       }));
@@ -116,7 +113,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const result: ProcessingResult = await processFishingData(data, lang);
       setComplianceStatus(result.status);
       setComplianceMessage(result.message);
-      // On met à jour le conseil seulement s'il est vide ou si c'est l'IA qui vient de tourner
       if (!aiAdvice || isAnalyzing) {
           setAiAdvice(result.advice);
       }
@@ -128,7 +124,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   };
 
   const handleSave = async () => {
-    // Validation minimale
     if (!formData.species) {
         alert(lang === 'fr' ? "Veuillez entrer au moins une espèce." : "Please enter at least a species.");
         return;
@@ -144,13 +139,13 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
         const newRecord: CatchRecord = {
           ...formData,
-          id: crypto.randomUUID(), // Temporaire, Firestore générera son propre ID
-          date: new Date(catchDate).toISOString(), // Utilisation de la date sélectionnée
+          id: crypto.randomUUID(), 
+          date: new Date(catchDate).toISOString(), 
           imageUrl: imageToSave,
           complianceStatus: complianceStatus,
           aiAdvice: aiAdvice,
-          location: formData.spot_type, // Store roughly
-          weatherSnapshot: weather || undefined // Sauvegarde de l'objet météo complet (Note: Météo actuelle, même si rétro-date)
+          location: location, // On sauvegarde la saisie manuelle de l'utilisateur
+          weatherSnapshot: weather || undefined 
         };
         onSave(newRecord);
     } catch (error) {
@@ -241,6 +236,18 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                   className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass} [color-scheme:dark]`}
                 />
             </div>
+            
+            {/* Location (Lieu / Adresse) - Champ indépendant */}
+            <div className="space-y-2">
+                <label className={labelClass}>{t.fields.location}</label>
+                <input 
+                  type="text" 
+                  value={location} 
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="ex: Port de Brest, Plage des Minimes..."
+                  className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
+                />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -296,15 +303,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                       placeholder="e.g. River, Open Sea..."
                       className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
                     />
-                    {weather && !formData.spot_type && (
-                         <p className="text-xs text-green-300 mt-1 flex items-center gap-1 font-medium drop-shadow-sm">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                             </svg>
-                             Auto-detected: {weather.desc}
-                         </p>
-                    )}
                   </div>
              </div>
 

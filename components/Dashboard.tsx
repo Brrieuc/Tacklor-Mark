@@ -7,6 +7,7 @@ import { User } from 'firebase/auth';
 interface DashboardProps {
   catches: CatchRecord[];
   onAddNew: () => void;
+  onDelete: (id: string) => void;
   onLogin: () => void;
   user: User | null;
   lang: Language;
@@ -42,7 +43,7 @@ const StatusBadge: React.FC<{ status: CatchRecord['complianceStatus']; lang: Lan
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelete, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
   const t = translations[lang].dashboard;
   const tWeather = translations[lang].weather;
   const isDark = theme === 'dark';
@@ -244,7 +245,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onLogin
           </div>
         ) : (
           catches.map((catchItem) => (
-            <GlassCard key={catchItem.id} theme={theme} className="group hover:-translate-y-1 transition-transform p-0 overflow-hidden flex flex-col h-full">
+            <GlassCard key={catchItem.id} theme={theme} className="group hover:-translate-y-1 transition-transform p-0 overflow-hidden flex flex-col h-full relative">
+              
+              {/* Delete Button (Visible on Hover of the card or always for touch) */}
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (window.confirm(translations[lang].dashboard.actions.confirmDelete)) {
+                    onDelete(catchItem.id);
+                  }
+                }}
+                className="absolute top-3 right-3 z-10 p-2 bg-black/40 hover:bg-red-600 backdrop-blur-md rounded-full text-white transition-colors border border-white/10 shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                aria-label={t.actions.delete}
+                title={t.actions.delete}
+              >
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                 </svg>
+              </button>
+
               {/* Image Section */}
               <div className="relative h-56 w-full overflow-hidden">
                 <img 
@@ -258,9 +277,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onLogin
                    {catchItem.species}
                 </div>
 
-                <div className="absolute top-3 right-3">
+                {/* Status Badge - Shifted left to avoid delete button */}
+                <div className="absolute top-3 right-14">
                   <StatusBadge status={catchItem.complianceStatus} lang={lang} />
                 </div>
+
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                   <p className="text-xs text-white/90 font-medium">{new Date(catchItem.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>
                 </div>
@@ -279,9 +300,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onLogin
                   </div>
                 </div>
 
-                {/* Additional Info (Technique/Spot) */}
-                {(catchItem.technique || catchItem.spot_type) && (
+                {/* Additional Info (Location, Technique, Spot) */}
+                {(catchItem.location || catchItem.technique || catchItem.spot_type) && (
                     <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3 border-white/20 text-white/80">
+                         {/* Location (Full width if available) */}
+                        {catchItem.location && (
+                            <div className="col-span-2 flex items-center gap-1 text-white/90 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-bold">{catchItem.location}</span>
+                            </div>
+                        )}
                         {catchItem.technique && <div><span className="opacity-60 block font-semibold">{t.labels.technique}</span>{catchItem.technique}</div>}
                         {catchItem.spot_type && <div><span className="opacity-60 block font-semibold">{t.labels.spot}</span>{catchItem.spot_type}</div>}
                     </div>

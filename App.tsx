@@ -3,7 +3,7 @@ import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
 import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
-import { fetchUserCaptures, saveCapture } from './services/storageService';
+import { fetchUserCaptures, saveCapture, deleteCapture } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
 import { auth, signInWithGoogle, logoutUser } from './services/firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -109,6 +109,19 @@ export default function App() {
         alert("Erreur lors de la sauvegarde sur le cloud.");
     } finally {
         setDataLoading(false);
+    }
+  };
+  
+  const handleDeleteCatch = async (id: string) => {
+    if (!user) return;
+    
+    // On met à jour l'UI de manière optimiste ou on attend la confirmation
+    try {
+        await deleteCapture(id);
+        setCatches(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
+        console.error("Failed to delete", error);
+        alert("Erreur lors de la suppression de la prise.");
     }
   };
 
@@ -234,6 +247,7 @@ export default function App() {
             onAddNew={() => {
                 if(user) setView(ViewState.NEW_CATCH);
             }} 
+            onDelete={handleDeleteCatch}
             onLogin={handleLogin}
             lang={lang}
             theme={theme}

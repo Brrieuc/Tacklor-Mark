@@ -28,10 +28,13 @@ export const translations = {
         weight: "Weight",
         sensitive: "Sensitive Species",
         technique: "Technique",
-        spot: "Spot"
+        spot: "Spot",
+        location: "Location"
       },
       actions: {
-        declare: "Send Legal Declaration"
+        declare: "Send Legal Declaration",
+        delete: "Delete",
+        confirmDelete: "Are you sure you want to delete this catch? This action cannot be undone."
       }
     },
     form: {
@@ -49,7 +52,8 @@ export const translations = {
         length: "Length (cm)",
         weight: "Weight (kg)",
         technique: "Technique Used",
-        spot: "Spot Type"
+        spot: "Spot Type",
+        location: "Location / Address"
       },
       compliance: {
         title: "RecFishing Compliance",
@@ -97,10 +101,13 @@ export const translations = {
         weight: "Poids",
         sensitive: "Espèce Sensible",
         technique: "Technique",
-        spot: "Poste"
+        spot: "Poste",
+        location: "Lieu"
       },
       actions: {
-        declare: "Envoyer la déclaration légale"
+        declare: "Envoyer la déclaration légale",
+        delete: "Supprimer",
+        confirmDelete: "Êtes-vous sûr de vouloir supprimer cette prise ? Cette action est irréversible."
       }
     },
     form: {
@@ -118,7 +125,8 @@ export const translations = {
         length: "Taille (cm)",
         weight: "Poids (kg)",
         technique: "Technique utilisée",
-        spot: "Type de poste"
+        spot: "Type de poste",
+        location: "Lieu / Adresse"
       },
       compliance: {
         title: "Conformité RecFishing",
