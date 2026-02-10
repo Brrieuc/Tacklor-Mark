@@ -15,6 +15,51 @@ interface NewCatchFormProps {
   initialData?: CatchRecord | null; // Props pour le mode édition
 }
 
+// Données Biologiques des espèces (Data Quality Expert)
+interface SpeciesData {
+  id: string;
+  fr: string;
+  en: string;
+  max: number; // Taille maximum biologique en cm
+  type: 'freshwater' | 'saltwater';
+}
+
+const SPECIES_DB: SpeciesData[] = [
+  // Eau douce
+  { id: 'pike', fr: 'Brochet', en: 'Northern Pike', max: 140, type: 'freshwater' },
+  { id: 'zander', fr: 'Sandre', en: 'Zander', max: 100, type: 'freshwater' },
+  { id: 'perch', fr: 'Perche', en: 'European Perch', max: 55, type: 'freshwater' },
+  { id: 'carp', fr: 'Carpe Commune', en: 'Common Carp', max: 120, type: 'freshwater' },
+  { id: 'catfish', fr: 'Silure', en: 'Wels Catfish', max: 270, type: 'freshwater' },
+  { id: 'trout', fr: 'Truite Fario', en: 'Brown Trout', max: 90, type: 'freshwater' },
+  { id: 'blackbass', fr: 'Black-Bass', en: 'Black Bass', max: 65, type: 'freshwater' },
+  { id: 'chub', fr: 'Chevesne', en: 'European Chub', max: 65, type: 'freshwater' },
+  { id: 'barbel', fr: 'Barbeau', en: 'Barbel', max: 90, type: 'freshwater' },
+  { id: 'bream', fr: 'Brème', en: 'Bream', max: 70, type: 'freshwater' },
+  { id: 'eel', fr: 'Anguille', en: 'Eel', max: 100, type: 'freshwater' },
+  { id: 'roach', fr: 'Gardon', en: 'Roach', max: 40, type: 'freshwater' },
+  { id: 'rudd', fr: 'Rotengle', en: 'Common Rudd', max: 40, type: 'freshwater' },
+  { id: 'char', fr: 'Omble Chevalier', en: 'Arctic Char', max: 70, type: 'freshwater' },
+  { id: 'sturgeon', fr: 'Esturgeon', en: 'Sturgeon', max: 200, type: 'freshwater' },
+
+  // Eau de mer
+  { id: 'bass', fr: 'Bar (Loup)', en: 'European Bass', max: 100, type: 'saltwater' },
+  { id: 'gilthead', fr: 'Daurade Royale', en: 'Gilt-head Bream', max: 75, type: 'saltwater' },
+  { id: 'mackerel', fr: 'Maquereau', en: 'Mackerel', max: 50, type: 'saltwater' },
+  { id: 'pollock', fr: 'Lieu Jaune', en: 'Pollock', max: 100, type: 'saltwater' },
+  { id: 'bluefin', fr: 'Thon Rouge', en: 'Bluefin Tuna', max: 300, type: 'saltwater' },
+  { id: 'porgy', fr: 'Pagre', en: 'Red Porgy', max: 80, type: 'saltwater' },
+  { id: 'wrasse', fr: 'Vieille', en: 'Ballan Wrasse', max: 60, type: 'saltwater' },
+  { id: 'seabream', fr: 'Sar Commun', en: 'White Seabream', max: 45, type: 'saltwater' },
+  { id: 'sole', fr: 'Sole', en: 'Common Sole', max: 50, type: 'saltwater' },
+  { id: 'redmullet', fr: 'Rouget', en: 'Red Mullet', max: 40, type: 'saltwater' },
+  { id: 'bonito', fr: 'Bonite', en: 'Bonito', max: 90, type: 'saltwater' },
+  { id: 'whiting', fr: 'Merlan', en: 'Whiting', max: 60, type: 'saltwater' },
+  { id: 'conger', fr: 'Congre', en: 'Conger Eel', max: 250, type: 'saltwater' },
+  { id: 'ray', fr: 'Raie', en: 'Ray', max: 120, type: 'saltwater' },
+  { id: 'mullet', fr: 'Mulet', en: 'Mullet', max: 80, type: 'saltwater' },
+];
+
 // Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
 const DEFAULT_IMAGE = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png";
 
@@ -26,6 +71,10 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const [isSaving, setIsSaving] = useState(false); 
   const isEditMode = !!initialData;
   
+  // Validation State
+  const [isSizeInvalid, setIsSizeInvalid] = useState(false);
+  const [currentSpeciesMax, setCurrentSpeciesMax] = useState<number>(0);
+
   // Initialisation de la date
   const [catchDate, setCatchDate] = useState(() => {
     if (initialData?.date) {
@@ -64,6 +113,26 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
   const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
+
+  // Validation Logic (Biologie Marine)
+  useEffect(() => {
+    // Retrouver l'espèce sélectionnée dans notre DB
+    const selectedSpecies = SPECIES_DB.find(s => s.fr === formData.species || s.en === formData.species);
+    
+    if (selectedSpecies) {
+      setCurrentSpeciesMax(selectedSpecies.max);
+      // Vérification de cohérence (Impossible d'avoir un poisson plus grand que le max biologique connu + marge erreur)
+      if (formData.length_cm > selectedSpecies.max) {
+        setIsSizeInvalid(true);
+      } else {
+        setIsSizeInvalid(false);
+      }
+    } else {
+      setCurrentSpeciesMax(0);
+      setIsSizeInvalid(false);
+    }
+  }, [formData.species, formData.length_cm]);
+
 
   // Auto-fill Location if weather contains location name (Reverse Geo) - ONLY if not editing and field is empty
   useEffect(() => {
@@ -108,8 +177,20 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     try {
       if(file) {
         const result = await analyzeCatchImage(file, lang);
+        
+        // Tentative de correspondance IA -> DB Espèces (Match fuzzy basique ou exact)
+        let matchedSpecies = result.species;
+        const found = SPECIES_DB.find(s => 
+            s.fr.toLowerCase().includes(result.species.toLowerCase()) || 
+            s.en.toLowerCase().includes(result.species.toLowerCase())
+        );
+        if (found) {
+            matchedSpecies = lang === 'fr' ? found.fr : found.en;
+        }
+
         setFormData(prev => ({
             ...result,
+            species: matchedSpecies,
             technique: result.technique || prev.technique,
             spot_type: result.spot_type || prev.spot_type
         }));
@@ -143,7 +224,13 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
   const handleSave = async () => {
     if (!formData.species) {
-        alert(lang === 'fr' ? "Veuillez entrer au moins une espèce." : "Please enter at least a species.");
+        alert(t.validation.selectSpecies);
+        return;
+    }
+    
+    // Blocage si taille incohérente
+    if (isSizeInvalid) {
+        alert(t.validation.sizeError.replace('{max}', currentSpeciesMax.toString()));
         return;
     }
 
@@ -273,14 +360,36 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className={labelClass}>{t.fields.species}</label>
-                <input 
-                  type="text" 
-                  value={formData.species} 
-                  onChange={(e) => setFormData({...formData, species: e.target.value})}
-                  placeholder="ex: Bar, Truite..."
-                  className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
-                />
+                <div className="relative">
+                  <select
+                    value={formData.species}
+                    onChange={(e) => setFormData({...formData, species: e.target.value})}
+                    className={`w-full rounded-xl px-4 py-3 appearance-none focus:outline-none focus:ring-2 ${inputClass}`}
+                  >
+                    <option value="" disabled>{t.fields.speciesPlaceholder}</option>
+                    
+                    <optgroup label={t.fields.groups.freshwater} className="bg-gray-800">
+                      {SPECIES_DB.filter(s => s.type === 'freshwater').map(s => (
+                        <option key={s.id} value={lang === 'fr' ? s.fr : s.en}>
+                          {lang === 'fr' ? s.fr : s.en}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    <optgroup label={t.fields.groups.saltwater} className="bg-gray-800">
+                      {SPECIES_DB.filter(s => s.type === 'saltwater').map(s => (
+                        <option key={s.id} value={lang === 'fr' ? s.fr : s.en}>
+                           {lang === 'fr' ? s.fr : s.en}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/50">
+                      <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                   </div>
+                </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
                     <label className={labelClass}>{t.fields.length}</label>
@@ -288,8 +397,18 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                       type="number" 
                       value={formData.length_cm || ''} 
                       onChange={(e) => setFormData({...formData, length_cm: Number(e.target.value)})}
-                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass}`}
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${isSizeInvalid ? 'border-red-500 bg-red-900/20' : inputClass}`}
                     />
+                    {/* Validation Hints & Errors */}
+                    {isSizeInvalid ? (
+                        <p className="text-red-400 text-xs font-bold mt-1">
+                            {t.validation.sizeError.replace('{max}', currentSpeciesMax.toString())}
+                        </p>
+                    ) : currentSpeciesMax > 0 && (
+                        <p className="text-white/40 text-xs mt-1">
+                            {t.validation.sizeHint.replace('{max}', currentSpeciesMax.toString())}
+                        </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className={labelClass}>{t.fields.weight}</label>
@@ -387,7 +506,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
             {/* Save Button */}
             <button 
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || isSizeInvalid}
               className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
             >
               {isSaving ? "Sauvegarde..." : (isEditMode ? t.update : t.save)}

@@ -71,11 +71,21 @@ export const translations = {
       fields: {
         date: "Date & Time",
         species: "Species",
+        speciesPlaceholder: "Select a species",
         length: "Length (cm)",
         weight: "Weight (kg)",
         technique: "Technique Used",
         spot: "Spot Type",
-        location: "Location / Address"
+        location: "Location / Address",
+        groups: {
+          freshwater: "Freshwater",
+          saltwater: "Saltwater"
+        }
+      },
+      validation: {
+        sizeError: "Size inconsistent for this species (Max: {max} cm)",
+        sizeHint: "Biological max size: {max} cm",
+        selectSpecies: "Please select a species."
       },
       compliance: {
         title: "RecFishing Compliance",
@@ -251,11 +261,21 @@ export const translations = {
       fields: {
         date: "Date et Heure",
         species: "Espèce",
+        speciesPlaceholder: "Sélectionnez une espèce",
         length: "Taille (cm)",
         weight: "Poids (kg)",
         technique: "Technique utilisée",
         spot: "Type de poste",
-        location: "Lieu / Adresse"
+        location: "Lieu / Adresse",
+        groups: {
+          freshwater: "Eau Douce",
+          saltwater: "Eau de Mer"
+        }
+      },
+      validation: {
+        sizeError: "Taille incohérente pour cette espèce (Max : {max} cm)",
+        sizeHint: "Taille max biologique : {max} cm",
+        selectSpecies: "Veuillez sélectionner une espèce."
       },
       compliance: {
         title: "Conformité RecFishing",
