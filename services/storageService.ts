@@ -1,6 +1,6 @@
 import { CatchRecord, UserProfile } from "../types";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where } from "firebase/firestore";
 
 const LOGBOOK_KEY = 'tacklor_logbook';
 const USER_KEY = 'tacklor_user_profile';
@@ -51,25 +51,34 @@ export const compressImage = (file: File): Promise<string> => {
 
 /**
  * Récupère le carnet de pêche.
- * Si userId est présent, fetch depuis Firebase. Sinon, LocalStorage.
+ * Si userId est présent, fetch depuis Firebase (Collection 'captures'). Sinon, LocalStorage.
  */
 export const getLogbook = async (userId?: string | null): Promise<CatchRecord[]> => {
   // 1. Mode Firebase (Connecté)
   if (userId && db) {
       try {
-          const catchesRef = collection(db, "users", userId, "catches");
-          // Tri par date décroissante
-          const q = query(catchesRef, orderBy("date", "desc"));
+          const catchesRef = collection(db, "captures");
+          // Requête sécurisée : On ne récupère que les captures où userId correspond
+          const q = query(
+              catchesRef, 
+              where("userId", "==", userId),
+              orderBy("date", "desc")
+          );
+          
           const querySnapshot = await getDocs(q);
           
           const records: CatchRecord[] = [];
           querySnapshot.forEach((doc) => {
               // On fusionne l'ID du doc Firestore avec les données
-              records.push({ ...doc.data(), id: doc.id } as CatchRecord);
+              const data = doc.data();
+              // On cast en CatchRecord (le userId est filtré mais non affiché dans l'UI)
+              records.push({ ...data, id: doc.id } as CatchRecord);
           });
           return records;
       } catch (e) {
           console.error("Erreur lecture Firestore:", e);
+          // Si l'erreur est liée aux indexes manquants (fréquent avec where + orderBy),
+          // cela s'affichera dans la console avec un lien pour créer l'index.
           return [];
       }
   }
@@ -88,18 +97,22 @@ export const getLogbook = async (userId?: string | null): Promise<CatchRecord[]>
 
 /**
  * Sauvegarde une prise.
- * Si userId est présent, addDoc vers Firebase. Sinon, LocalStorage.
+ * Si userId est présent, addDoc vers Firebase (Collection 'captures'). Sinon, LocalStorage.
  * Retourne la liste mise à jour.
  */
 export const saveToLogbook = async (newCatch: CatchRecord, userId?: string | null): Promise<CatchRecord[]> => {
   // 1. Mode Firebase (Connecté)
   if (userId && db) {
       try {
-          const catchesRef = collection(db, "users", userId, "catches");
-          // On supprime l'ID généré localement pour laisser Firestore gérer l'ID, 
-          // ou on l'utilise si on veut forcer l'ID (ici on laisse Firestore faire mais on garde la structure)
-          // Note: Firestore stocke les dates complexes, on s'assure que c'est une string ISO pour compatibilité UI
-          await addDoc(catchesRef, newCatch);
+          const catchesRef = collection(db, "captures");
+          
+          // On ajoute le userId au document pour la sécurité
+          const docData = {
+              ...newCatch,
+              userId: userId // Champ essentiel pour les Security Rules
+          };
+
+          await addDoc(catchesRef, docData);
           
           // On re-fetch pour avoir la liste à jour et synchronisée
           return await getLogbook(userId);
@@ -126,9 +139,7 @@ export const saveToLogbook = async (newCatch: CatchRecord, userId?: string | nul
   });
 };
 
-// --- User Profile Persistence (LocalStorage only for Guest UI prefs) ---
-// Le profil Firebase (photo/nom) est géré directement via l'objet User Auth dans App.tsx
-
+// --- User Profile Persistence ---
 export const getLocalUserProfile = (): UserProfile => {
   try {
     const stored = localStorage.getItem(USER_KEY);
