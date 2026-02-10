@@ -78,6 +78,40 @@ export const translations = {
       save: "Save to Logbook",
       update: "Update Entry"
     },
+    trophies: {
+      title: "Trophy Road",
+      progress: "Progress",
+      locked: "Mystery Badge",
+      lockedDesc: "Keep fishing to reveal this milestone!",
+      badges: {
+        // Length
+        ruler: "School Ruler",
+        rulerDesc: "You've started measuring!",
+        rod: "Fishing Rod",
+        rodDesc: "Length of a standard surfcasting rod.",
+        bus: "School Bus",
+        busDesc: "That's a long line of fish!",
+        pool: "Olympic Pool",
+        poolDesc: "50 meters of pure scale.",
+        football: "Football Field",
+        footballDesc: "100m! Touchdown!",
+        eiffel: "Eiffel Tower",
+        eiffelDesc: "A monumental pile of fish.",
+        // Weight
+        bag: "Groceries Bag",
+        bagDesc: "Heavy enough for a good dinner.",
+        dog: "Golden Retriever",
+        dogDesc: "Man's best fishing buddy.",
+        person: "Sumo Wrestler",
+        personDesc: "A heavyweight champion.",
+        piano: "Grand Piano",
+        pianoDesc: "Music to my ears.",
+        f1: "Formula 1 Car",
+        f1Desc: "750kg of speed and scales!",
+        shark: "Great White",
+        sharkDesc: "The apex predator weight."
+      }
+    },
     aiActive: "Gemini AI Active"
   },
   fr: {
@@ -156,6 +190,40 @@ export const translations = {
       adviceTitle: "Conseil Tacklor Guide AI",
       save: "Enregistrer",
       update: "Mettre à jour"
+    },
+    trophies: {
+      title: "Voie des Trophées",
+      progress: "Progression",
+      locked: "Badge Mystère",
+      lockedDesc: "Continuez à pêcher pour révéler ce palier !",
+      badges: {
+        // Length
+        ruler: "Double Décimètre",
+        rulerDesc: "Vous commencez à mesurer !",
+        rod: "Canne de Surf",
+        rodDesc: "La longueur d'une canne standard (4m).",
+        bus: "Bus Scolaire",
+        busDesc: "Une sacrée ligne de poissons (12m) !",
+        pool: "Piscine Olympique",
+        poolDesc: "50 mètres d'écailles.",
+        football: "Terrain de Foot",
+        footballDesc: "100m ! Touchdown !",
+        eiffel: "Tour Eiffel",
+        eiffelDesc: "Une pile monumentale de prises (300m).",
+        // Weight
+        bag: "Sac de Courses",
+        bagDesc: "Assez lourd pour un bon dîner (5kg).",
+        dog: "Golden Retriever",
+        dogDesc: "Le meilleur ami du pêcheur (30kg).",
+        person: "Sumo",
+        personDesc: "Un champion poids lourd (100kg).",
+        piano: "Piano à Queue",
+        pianoDesc: "De la musique pour mes oreilles (300kg).",
+        f1: "Formule 1",
+        f1Desc: "750kg de vitesse et d'écailles !",
+        shark: "Grand Requin Blanc",
+        sharkDesc: "Le poids du prédateur ultime (1T)."
+      }
     },
     aiActive: "IA Gemini Active"
   }

@@ -3,6 +3,7 @@ import { CatchRecord, Language, Theme, WeatherData } from '../types';
 import { GlassCard } from './GlassCard';
 import { translations } from '../i18n';
 import { User } from 'firebase/auth';
+import { TrophyModal } from './TrophyModal';
 
 interface DashboardProps {
   catches: CatchRecord[];
@@ -47,6 +48,9 @@ const StatusBadge: React.FC<{ status: CatchRecord['complianceStatus']; lang: Lan
 export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit, onDelete, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
   const [selectedCatch, setSelectedCatch] = useState<CatchRecord | null>(null);
   
+  // State for Trophy Modals
+  const [trophyModalType, setTrophyModalType] = useState<'weight' | 'length' | null>(null);
+
   const t = translations[lang].dashboard;
   const tWeather = translations[lang].weather;
   const isDark = theme === 'dark';
@@ -56,6 +60,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
   
   // Calculs statistiques
   const totalLengthCm = catches.reduce((acc, curr) => acc + curr.length_cm, 0);
+  const totalWeightKg = catches.reduce((acc, curr) => acc + curr.weight_kg, 0);
+
   const totalLengthDisplay = totalLengthCm >= 100 
     ? `${(totalLengthCm / 100).toFixed(2)} m` 
     : `${totalLengthCm} cm`;
@@ -63,6 +69,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 pb-24">
       
+      {/* Trophy Modals Integration */}
+      {trophyModalType && (
+          <TrophyModal 
+            isOpen={true}
+            onClose={() => setTrophyModalType(null)}
+            currentValue={trophyModalType === 'weight' ? totalWeightKg : totalLengthCm}
+            type={trophyModalType}
+            lang={lang}
+            theme={theme}
+          />
+      )}
+
       {/* Sticky Header Area */}
       <div 
         className={`sticky top-[72px] sm:top-[80px] z-40 w-full flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
@@ -188,20 +206,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit,
           <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalCatches}</span>
         </GlassCard>
         
-        {/* NEW STAT: Total Length */}
-        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
-          <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
-            {totalLengthDisplay}
-          </span>
-          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalLength}</span>
-        </GlassCard>
+        {/* Total Length - CLICKABLE FOR TROPHY ROAD */}
+        <div onClick={() => setTrophyModalType('length')} className="cursor-pointer group transform transition-transform hover:scale-[1.02]">
+            <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8 relative overflow-hidden group-hover:bg-black/30 transition-colors border-2 border-transparent group-hover:border-white/20">
+              {/* Shine Effect Hint */}
+              <div className="absolute -top-10 -right-10 w-20 h-20 bg-yellow-400/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              
+              <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
+                {totalLengthDisplay}
+              </span>
+              <div className="flex items-center gap-2 mt-2">
+                 <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-white/70 text-center">{t.totalLength}</span>
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                 </svg>
+              </div>
+            </GlassCard>
+        </div>
 
-        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
-          <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
-            {catches.reduce((acc, curr) => acc + curr.weight_kg, 0).toFixed(3)} <span className="text-lg md:text-2xl font-normal opacity-60">kg</span>
-          </span>
-          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalWeight}</span>
-        </GlassCard>
+        {/* Total Weight - CLICKABLE FOR TROPHY ROAD */}
+        <div onClick={() => setTrophyModalType('weight')} className="cursor-pointer group transform transition-transform hover:scale-[1.02]">
+            <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8 relative overflow-hidden group-hover:bg-black/30 transition-colors border-2 border-transparent group-hover:border-white/20">
+              <div className="absolute -top-10 -right-10 w-20 h-20 bg-yellow-400/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              
+              <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
+                {totalWeightKg.toFixed(3)} <span className="text-lg md:text-2xl font-normal opacity-60">kg</span>
+              </span>
+              <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs md:text-sm font-bold uppercase tracking-widest text-white/70 text-center">{t.totalWeight}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                 </svg>
+              </div>
+            </GlassCard>
+        </div>
         
         <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
           <span className="text-4xl md:text-5xl font-extrabold text-green-400">
