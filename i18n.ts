@@ -44,6 +44,7 @@ export const translations = {
       analyze: "Analyze Catch",
       analyzing: "Analyzing with Gemini...",
       fields: {
+        date: "Date & Time",
         species: "Species",
         length: "Length (cm)",
         weight: "Weight (kg)",
@@ -112,6 +113,7 @@ export const translations = {
       analyze: "Analyser la prise",
       analyzing: "Analyse avec Gemini...",
       fields: {
+        date: "Date et Heure",
         species: "Espèce",
         length: "Taille (cm)",
         weight: "Poids (kg)",

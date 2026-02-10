@@ -24,6 +24,13 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSaving, setIsSaving] = useState(false); 
   
+  // Initialisation de la date avec l'heure locale actuelle au format YYYY-MM-DDTHH:mm
+  const [catchDate, setCatchDate] = useState(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 16);
+  });
+
   // Initialisation avec des valeurs vides pour permettre la saisie manuelle immédiate
   const [formData, setFormData] = useState<CatchAnalysis>({
     species: '',
@@ -138,12 +145,12 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
         const newRecord: CatchRecord = {
           ...formData,
           id: crypto.randomUUID(), // Temporaire, Firestore générera son propre ID
-          date: new Date().toISOString(),
+          date: new Date(catchDate).toISOString(), // Utilisation de la date sélectionnée
           imageUrl: imageToSave,
           complianceStatus: complianceStatus,
           aiAdvice: aiAdvice,
           location: formData.spot_type, // Store roughly
-          weatherSnapshot: weather || undefined // Sauvegarde de l'objet météo complet
+          weatherSnapshot: weather || undefined // Sauvegarde de l'objet météo complet (Note: Météo actuelle, même si rétro-date)
         };
         onSave(newRecord);
     } catch (error) {
@@ -162,7 +169,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           </svg>
           <span className="font-medium">{t.back}</span>
         </button>
-        {/* Titre "Nouvelle Entrée" supprimé ici comme demandé */}
       </div>
 
       <GlassCard theme={theme} className="space-y-8">
@@ -224,6 +230,18 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
         {/* Formulaire Toujours Visible */}
         <div className="animate-fade-in space-y-6">
+            
+            {/* Date Selection */}
+            <div className="space-y-2">
+                <label className={labelClass}>{t.fields.date}</label>
+                <input 
+                  type="datetime-local" 
+                  value={catchDate} 
+                  onChange={(e) => setCatchDate(e.target.value)}
+                  className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:ring-2 ${inputClass} [color-scheme:dark]`}
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className={labelClass}>{t.fields.species}</label>
