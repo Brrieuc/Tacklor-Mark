@@ -217,8 +217,16 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       };
 
       const result: ProcessingResult = await processFishingData(enrichedData, lang);
-      setComplianceStatus(result.status);
-      setComplianceMessage(result.message);
+      
+      // Si l'utilisateur a déjà validé, on ne revient pas en arrière automatiquement
+      // sauf si le nouveau statut est 'compliant' (ex: changement d'espèce non sensible)
+      if (complianceStatus === 'legal_declaration_validated' && result.status !== 'compliant') {
+          // On garde validated
+          setComplianceMessage(result.message); // On met à jour le message au cas où
+      } else {
+          setComplianceStatus(result.status);
+          setComplianceMessage(result.message);
+      }
       
       // On garde l'ancien conseil si on édite, sauf si l'analyse vient de tourner
       if ((!aiAdvice || isAnalyzing) && !isEditMode) {
@@ -273,7 +281,10 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   };
 
   // Helper to determine if we should show the full alert box
-  const showLegalAlert = complianceStatus === 'legal_declaration_required';
+  // We show alert if Required OR Validated (to confirm it worked)
+  const isRequired = complianceStatus === 'legal_declaration_required';
+  const isValidated = complianceStatus === 'legal_declaration_validated';
+  const showLegalAlert = isRequired || isValidated;
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 pb-20">
@@ -500,33 +511,44 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                                 ⚠️ {t.compliance.actionRequired}
                             </div>
                         )}
-                        {showLegalAlert && (
+                        {isRequired && (
                             <div className="text-purple-300 font-bold bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/50 animate-pulse">
                                 ⚖️ {t.compliance.actionRequired}
+                            </div>
+                        )}
+                        {isValidated && (
+                            <div className="flex items-center gap-2 text-green-300 font-bold bg-green-500/20 px-3 py-1 rounded-full border border-green-500/50">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                {t.status.legal_declaration_validated}
                             </div>
                         )}
                     </>
                  )}
               </div>
               
-              {/* Alert Message Box - Only show if Not Compliant */}
+              {/* Alert Message Box - Only show if Not Compliant or Validated */}
               {(complianceMessage && complianceStatus !== 'compliant') && (
                   <div className={`mt-4 p-4 rounded-xl border flex flex-col gap-3 ${
-                      showLegalAlert 
-                      ? 'bg-purple-900/40 border-purple-500/50 text-white' 
-                      : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-100'
+                      isValidated 
+                      ? 'bg-green-900/40 border-green-500/50 text-white'
+                      : showLegalAlert 
+                        ? 'bg-purple-900/40 border-purple-500/50 text-white' 
+                        : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-100'
                   }`}>
                       <div className="flex items-start gap-3">
-                          <span className="text-2xl">{showLegalAlert ? '🚨' : '⚠️'}</span>
+                          <span className="text-2xl">{isValidated ? '✅' : showLegalAlert ? '🚨' : '⚠️'}</span>
                           <p className="text-sm font-medium pt-1">{complianceMessage}</p>
                       </div>
 
                       {/* Specific Legal Button - ONLY if required */}
-                      {showLegalAlert && (
+                      {isRequired && (
                         <a 
                             href="https://www.mer.gouv.fr/peche-de-loisir-declaration-de-captures" 
                             target="_blank" 
                             rel="noopener noreferrer"
+                            onClick={() => setComplianceStatus('legal_declaration_validated')}
                             className="w-full mt-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg text-center transition-all border border-white/20 flex items-center justify-center gap-2"
                         >
                             <span>Remplir ma déclaration (CERFA)</span>

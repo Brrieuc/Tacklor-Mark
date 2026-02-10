@@ -20,9 +20,10 @@ export const translations = {
       guestState: "Please log in to create your fishing logbook and save your catches to the cloud.",
       status: {
         pending: "Pending Check",
-        compliant: "Compliant",
+        compliant: "Compliant", // Will be hidden in UI
         to_declare: "Action Required",
-        legal_declaration_required: "Legal Declaration Needed"
+        legal_declaration_required: "RecFishing Declaration Required",
+        legal_declaration_validated: "RecFishing Validated"
       },
       labels: {
         length: "Length",
@@ -211,9 +212,10 @@ export const translations = {
       guestState: "Veuillez vous connecter pour créer votre carnet de pêche et sauvegarder vos prises dans le cloud.",
       status: {
         pending: "En attente",
-        compliant: "Conforme",
+        compliant: "Conforme", // Masqué dans l'UI
         to_declare: "À déclarer",
-        legal_declaration_required: "Déclaration Légale Requise"
+        legal_declaration_required: "Déclaration RecFishing requise",
+        legal_declaration_validated: "RecFishing validé"
       },
       labels: {
         length: "Taille",
