@@ -1,7 +1,7 @@
-import { CatchRecord, LeaderboardEntry } from "../types";
+import { CatchRecord, LeaderboardEntry, UserProfile } from "../types";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, limit } from "firebase/firestore";
-import { User } from "firebase/auth";
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, limit, getDoc } from "firebase/firestore";
+import { User, updateProfile } from "firebase/auth";
 
 // --- Image Compression Logic ---
 export const compressImage = (file: File): Promise<string> => {
@@ -45,11 +45,84 @@ export const compressImage = (file: File): Promise<string> => {
   });
 };
 
-// --- Leaderboard Logic (Cloud Architect Requirement) ---
+// --- Profile & Privacy Management ---
+
+/**
+ * Récupère le profil utilisateur étendu depuis la collection 'users_profiles'.
+ * Si non existant, retourne des valeurs par défaut basées sur l'objet User Auth.
+ */
+export const fetchUserProfile = async (user: User): Promise<UserProfile> => {
+    if (!db) throw new Error("Database not initialized");
+    
+    const profileRef = doc(db, "users_profiles", user.uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists()) {
+        return profileSnap.data() as UserProfile;
+    } else {
+        // Default profile if not yet created in Firestore
+        return {
+            uid: user.uid,
+            displayName: user.displayName || "Pêcheur Anonyme",
+            photoURL: user.photoURL || "",
+            isPublic: true, // Par défaut public
+            email: user.email || ""
+        };
+    }
+};
+
+/**
+ * Sauvegarde les modifications de profil.
+ * 1. Met à jour le profil Firebase Auth (Display Name, PhotoURL)
+ * 2. Enregistre dans 'users_profiles'
+ * 3. Gère la visibilité dans 'leaderboard' (Supprime si privé, Update si public)
+ */
+export const saveUserProfile = async (user: User, newProfileData: Partial<UserProfile>): Promise<void> => {
+    if (!db) throw new Error("Database not initialized");
+
+    try {
+        // 1. Update Firebase Auth Profile (Standard)
+        if (newProfileData.displayName || newProfileData.photoURL) {
+            await updateProfile(user, {
+                displayName: newProfileData.displayName || user.displayName,
+                photoURL: newProfileData.photoURL || user.photoURL
+            });
+        }
+
+        // 2. Save to 'users_profiles' collection
+        const profileRef = doc(db, "users_profiles", user.uid);
+        const fullProfileData: UserProfile = {
+            uid: user.uid,
+            displayName: newProfileData.displayName || user.displayName || "Anonyme",
+            photoURL: newProfileData.photoURL || user.photoURL || "",
+            isPublic: newProfileData.isPublic !== undefined ? newProfileData.isPublic : true,
+            email: user.email || ""
+        };
+        
+        await setDoc(profileRef, fullProfileData, { merge: true });
+
+        // 3. Handle Leaderboard Privacy Logic
+        const leaderboardRef = doc(db, "leaderboard", user.uid);
+        
+        if (fullProfileData.isPublic === false) {
+            // Si l'utilisateur passe en PRIVE -> On le supprime du leaderboard
+            await deleteDoc(leaderboardRef);
+        } else {
+            // Si l'utilisateur passe en PUBLIC -> On force la mise à jour des stats
+            await updateUserLeaderboardStats(user, true); // Force update
+        }
+
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
+};
+
+
+// --- Leaderboard Logic ---
 
 /**
  * Calcule le "Niveau" affiché dans le leaderboard basé sur le nombre de prises.
- * C'est une logique simplifiée pour l'affichage.
  */
 const calculateUserLevel = (catchCount: number): string => {
     if (catchCount >= 100) return "Légende";
@@ -60,14 +133,23 @@ const calculateUserLevel = (catchCount: number): string => {
 
 /**
  * Met à jour le document de l'utilisateur dans la collection publique 'leaderboard'.
- * Cette fonction est appelée après chaque opération d'écriture sur 'captures'.
- * SECURITY: On ne copie JAMAIS la localisation précise.
+ * IMPORTANT : Vérifie d'abord si l'utilisateur est 'isPublic'.
+ * @param forceUpdate Si true, ignore la vérification de profil (utilisé quand on vient de passer en public)
  */
-const updateUserLeaderboardStats = async (user: User) => {
+const updateUserLeaderboardStats = async (user: User, forceUpdate = false) => {
     try {
-        // 1. Récupérer toutes les captures de l'utilisateur pour recalculer les totaux
-        // Note: Dans une vraie Cloud Function, on utiliserait un trigger Firestore increment/decrement.
-        // Ici, en client-side, on recalcule pour garantir la consistance.
+        // 0. Privacy Check
+        if (!forceUpdate) {
+            const profile = await fetchUserProfile(user);
+            if (!profile.isPublic) {
+                // Si l'utilisateur est privé, on ne met PAS à jour le leaderboard.
+                // On s'assure même qu'il n'y est pas (sécurité doublon)
+                await deleteDoc(doc(db, "leaderboard", user.uid));
+                return;
+            }
+        }
+
+        // 1. Récupérer toutes les captures
         const captures = await fetchUserCaptures(user.uid);
         
         const totalLength = captures.reduce((acc, curr) => acc + (curr.length_cm || 0), 0);
@@ -80,32 +162,29 @@ const updateUserLeaderboardStats = async (user: User) => {
             displayName: user.displayName || "Pêcheur Anonyme",
             photoURL: user.photoURL || "",
             total_length_cm: totalLength,
-            total_weight_kg: totalWeight, // Ajout du poids
+            total_weight_kg: totalWeight,
             catch_count: catchCount,
             level: calculateUserLevel(catchCount),
             last_updated: serverTimestamp()
         };
 
-        // 3. Écrire dans la collection 'leaderboard' (ID du doc = ID de l'user)
+        // 3. Écrire
         const leaderboardRef = doc(db, "leaderboard", user.uid);
         await setDoc(leaderboardRef, leaderboardData, { merge: true });
 
     } catch (e) {
         console.error("Erreur lors de la mise à jour du leaderboard:", e);
-        // On ne throw pas ici pour ne pas bloquer l'UX principale si le leaderboard échoue
     }
 };
 
 /**
  * Récupère le Top 10 du classement global selon un critère de tri.
- * @param sortBy Champ de tri : 'total_length_cm', 'total_weight_kg', 'catch_count'
  */
 export const fetchLeaderboard = async (sortBy: 'total_length_cm' | 'total_weight_kg' | 'catch_count' = 'total_length_cm'): Promise<LeaderboardEntry[]> => {
     if (!db) return [];
 
     try {
         const leaderboardRef = collection(db, "leaderboard");
-        // Query: Trie par le champ demandé décroissant, limite à 10
         const q = query(leaderboardRef, orderBy(sortBy, "desc"), limit(10));
         
         const querySnapshot = await getDocs(q);
@@ -125,36 +204,23 @@ export const fetchLeaderboard = async (sortBy: 'total_length_cm' | 'total_weight
 
 // --- Firestore Persistence ---
 
-/**
- * Récupère uniquement les captures de l'utilisateur connecté depuis la collection "captures".
- * Correction: Tri côté client pour éviter l'erreur "Missing Index" de Firestore sur les requêtes composées.
- */
 export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRecord[]> => {
-  // Sécurité côté client : Si pas d'ID, on retourne vide immédiatement.
   if (!userId || !db) {
       return [];
   }
 
   try {
       const catchesRef = collection(db, "captures");
-      
-      // Requête simple : Filtrer par userId uniquement.
-      // Note: On ne met pas orderBy("date") ici pour éviter de devoir créer un index composite manuellement dans Firebase Console.
-      const q = query(
-          catchesRef, 
-          where("userId", "==", userId)
-      );
+      const q = query(catchesRef, where("userId", "==", userId));
       
       const querySnapshot = await getDocs(q);
       
       const records: CatchRecord[] = [];
       querySnapshot.forEach((doc) => {
           const data = doc.data();
-          // On cast les données Firestore vers notre type CatchRecord
           records.push({ ...data, id: doc.id } as CatchRecord);
       });
 
-      // Tri côté client : Du plus récent au plus ancien
       return records.sort((a, b) => {
           const dateA = new Date(a.date).getTime();
           const dateB = new Date(b.date).getTime();
@@ -163,16 +229,10 @@ export const fetchUserCaptures = async (userId?: string | null): Promise<CatchRe
 
   } catch (e) {
       console.error("Erreur lors de la récupération des captures:", e);
-      // En cas d'erreur (ex: quota, network), on retourne un tableau vide pour ne pas crasher l'UI
       return [];
   }
 };
 
-/**
- * Sauvegarde une prise dans la collection "captures" de Firebase.
- * Utilise serverTimestamp pour un horodatage fiable.
- * Met à jour le leaderboard ensuite.
- */
 export const saveCapture = async (newCatch: CatchRecord, user: User): Promise<CatchRecord[]> => {
   if (!user || !db) {
       throw new Error("Utilisateur non authentifié.");
@@ -180,23 +240,19 @@ export const saveCapture = async (newCatch: CatchRecord, user: User): Promise<Ca
 
   try {
       const catchesRef = collection(db, "captures");
-      
-      // On sépare l'ID temporaire généré localement (qui sera inutile) des autres données
       const { id, ...dataToSave } = newCatch;
 
-      // Construction du document à sauvegarder
       const docData = {
           ...dataToSave,
           userId: user.uid, 
-          createdAt: serverTimestamp() // Horodatage serveur automatique
+          createdAt: serverTimestamp()
       };
 
       await addDoc(catchesRef, docData);
       
-      // Sync Leaderboard
+      // Sync Leaderboard (Will check privacy internally)
       await updateUserLeaderboardStats(user);
 
-      // On recharge la liste mise à jour pour l'affichage
       return await fetchUserCaptures(user.uid);
   } catch (e) {
       console.error("Erreur lors de la sauvegarde de la capture:", e);
@@ -204,10 +260,6 @@ export const saveCapture = async (newCatch: CatchRecord, user: User): Promise<Ca
   }
 };
 
-/**
- * Met à jour une prise existante dans Firebase.
- * Met à jour le leaderboard ensuite.
- */
 export const updateCapture = async (updatedCatch: CatchRecord, user: User): Promise<CatchRecord[]> => {
     if (!user || !db) {
         throw new Error("Utilisateur non authentifié.");
@@ -215,9 +267,6 @@ export const updateCapture = async (updatedCatch: CatchRecord, user: User): Prom
 
     try {
         const catchRef = doc(db, "captures", updatedCatch.id);
-        
-        // On ne met pas à jour userId ni createdAt, mais on peut mettre à jour updatedAt si on veut
-        // On extrait les champs modifiables
         const { id, ...dataToUpdate } = updatedCatch;
 
         await updateDoc(catchRef, {
@@ -225,10 +274,8 @@ export const updateCapture = async (updatedCatch: CatchRecord, user: User): Prom
             updatedAt: serverTimestamp()
         });
         
-        // Sync Leaderboard
         await updateUserLeaderboardStats(user);
 
-        // On recharge la liste mise à jour
         return await fetchUserCaptures(user.uid);
     } catch (e) {
         console.error("Erreur lors de la mise à jour de la capture:", e);
@@ -236,18 +283,11 @@ export const updateCapture = async (updatedCatch: CatchRecord, user: User): Prom
     }
 };
 
-/**
- * Supprime une prise de la collection "captures" de Firebase.
- * Met à jour le leaderboard ensuite.
- */
 export const deleteCapture = async (catchId: string, user: User): Promise<void> => {
   if (!db) throw new Error("Firestore not initialized");
   try {
     await deleteDoc(doc(db, "captures", catchId));
-    
-    // Sync Leaderboard
     await updateUserLeaderboardStats(user);
-
   } catch (e) {
     console.error("Erreur lors de la suppression du document:", e);
     throw e;

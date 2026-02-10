@@ -19,8 +19,11 @@ export interface CatchRecord extends CatchAnalysis {
 }
 
 export interface UserProfile {
-  name: string;
-  avatarUrl: string;
+  uid: string;
+  displayName: string;
+  photoURL: string;
+  isPublic: boolean; // Determine si l'utilisateur apparaît dans le leaderboard
+  email?: string;
 }
 
 export interface LeaderboardEntry {

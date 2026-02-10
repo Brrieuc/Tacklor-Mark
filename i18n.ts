@@ -43,6 +43,17 @@ export const translations = {
         viewAllBadges: "View All Badges"
       }
     },
+    profile: {
+      title: "My Profile",
+      displayName: "Display Name",
+      photoUrl: "Avatar URL",
+      privacyTitle: "Privacy Settings",
+      publicProfile: "Appear in Public Leaderboard",
+      publicDesc: "If disabled, you will be removed from community rankings.",
+      save: "Save Changes",
+      logout: "Log Out",
+      saved: "Profile updated successfully."
+    },
     leaderboard: {
       title: "Community Leaderboard",
       subtitle: "Top 10 Anglers",
@@ -234,6 +245,17 @@ export const translations = {
         confirmDelete: "Êtes-vous sûr de vouloir supprimer cette prise ? Cette action est irréversible.",
         viewAllBadges: "Voir tous mes badges"
       }
+    },
+    profile: {
+      title: "Mon Profil",
+      displayName: "Pseudo",
+      photoUrl: "URL Avatar",
+      privacyTitle: "Confidentialité",
+      publicProfile: "Apparaître dans le classement public",
+      publicDesc: "Si désactivé, vous serez retiré des classements communautaires.",
+      save: "Enregistrer les modifications",
+      logout: "Se déconnecter",
+      saved: "Profil mis à jour avec succès."
     },
     leaderboard: {
       title: "Classement Communauté",

@@ -66,6 +66,9 @@ const SPECIES_DB: SpeciesData[] = [
 // Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
 const DEFAULT_IMAGE = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png";
 
+// Clé de stockage pour le brouillon
+const DRAFT_STORAGE_KEY = 'tacklor_catch_draft';
+
 export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather, initialData }) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl || null);
@@ -109,26 +112,62 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const [aiAdvice, setAiAdvice] = useState<string>(initialData?.aiAdvice || '');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const t = translations[lang].form;
+
+  // --- DRAFT RESTORATION LOGIC ---
+  useEffect(() => {
+    // Si on n'est PAS en mode édition (création pure), on vérifie s'il y a un brouillon
+    if (!isEditMode) {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          // On restaure les données
+          setFormData(parsed.formData);
+          setComplianceStatus(parsed.complianceStatus);
+          setLocation(parsed.location);
+          setAiAdvice(parsed.aiAdvice);
+          setCatchDate(parsed.catchDate);
+          
+          // Note: On ne peut pas restaurer l'image File object facilement, 
+          // mais on garde les données texte, ce qui est le plus important après un retour de lien externe.
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+      }
+    }
+  }, [isEditMode]);
+
+  // Sauvegarde manuelle du brouillon (appelée avant de quitter vers le lien externe)
+  const saveDraftToStorage = (overrideStatus?: CatchRecord['complianceStatus']) => {
+    const draft = {
+        formData,
+        complianceStatus: overrideStatus || complianceStatus,
+        location,
+        aiAdvice,
+        catchDate
+    };
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  };
   
-  // Style harmonisé : Texte blanc + Ombre portée adoucie
+  // Style harmonisé
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
   const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
 
   // Validation Logic (Biologie Marine)
   useEffect(() => {
-    // Retrouver l'espèce sélectionnée dans notre DB
     const selectedSpecies = SPECIES_DB.find(s => s.fr === formData.species || s.en === formData.species);
     setCurrentSpeciesData(selectedSpecies || null);
     
     if (selectedSpecies && formData.length_cm > 0) {
       if (formData.length_cm > selectedSpecies.limit) {
-          // Bloquant : Dépasse le plafond absolu de l'app
           setValidationStatus('error');
       } else if (formData.length_cm > selectedSpecies.max) {
-          // Warning : Dépasse le max biologique moyen, mais sous le plafond (Record potentiel)
           setValidationStatus('record');
       } else {
           setValidationStatus('valid');
@@ -138,15 +177,14 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     }
   }, [formData.species, formData.length_cm]);
 
-
-  // Auto-fill Location if weather contains location name (Reverse Geo) - ONLY if not editing and field is empty
+  // Auto-fill Location
   useEffect(() => {
     if (!isEditMode && weather?.locationName && !location) {
         setLocation(weather.locationName);
     }
   }, [weather, isEditMode]);
 
-  // Déclenche la vérification de conformité lorsque les données changent (Debounce simple)
+  // Déclenche la vérification de conformité
   useEffect(() => {
     const timer = setTimeout(() => {
         if (formData.species) {
@@ -158,7 +196,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
   useEffect(() => {
     return () => {
-      // Revoke only if it was a blob URL created by user selection
       if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
@@ -183,7 +220,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       if(file) {
         const result = await analyzeCatchImage(file, lang);
         
-        // Tentative de correspondance IA -> DB Espèces (Match fuzzy basique ou exact)
         let matchedSpecies = result.species;
         const found = SPECIES_DB.find(s => 
             s.fr.toLowerCase().includes(result.species.toLowerCase()) || 
@@ -210,7 +246,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const handleRecFishingCheck = async (data: CatchAnalysis) => {
     setIsSyncing(true);
     try {
-      // IMPORTANT: On passe aussi le snapshot météo (qui contient lat/lon) pour la détermination de zone
       const enrichedData: Partial<CatchRecord> = {
           ...data,
           weatherSnapshot: weather || undefined
@@ -219,16 +254,13 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const result: ProcessingResult = await processFishingData(enrichedData, lang);
       
       // Si l'utilisateur a déjà validé, on ne revient pas en arrière automatiquement
-      // sauf si le nouveau statut est 'compliant' (ex: changement d'espèce non sensible)
       if (complianceStatus === 'legal_declaration_validated' && result.status !== 'compliant') {
-          // On garde validated
-          setComplianceMessage(result.message); // On met à jour le message au cas où
+          setComplianceMessage(result.message);
       } else {
           setComplianceStatus(result.status);
           setComplianceMessage(result.message);
       }
       
-      // On garde l'ancien conseil si on édite, sauf si l'analyse vient de tourner
       if ((!aiAdvice || isAnalyzing) && !isEditMode) {
           setAiAdvice(result.advice);
       } else if (isAnalyzing && isEditMode) {
@@ -241,13 +273,24 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     }
   };
 
+  // Gestion du clic sur le lien externe
+  const handleLegalLinkClick = (e: React.MouseEvent) => {
+     // 1. Mettre à jour l'état local immédiatement
+     const newStatus = 'legal_declaration_validated';
+     setComplianceStatus(newStatus);
+     
+     // 2. Sauvegarder dans le localStorage pour persistance si l'onglet reload
+     saveDraftToStorage(newStatus);
+
+     // L'événement suit son cours (ouverture du lien _blank)
+  };
+
   const handleSave = async () => {
     if (!formData.species) {
         alert(t.validation.selectSpecies);
         return;
     }
     
-    // Blocage UNIQUEMENT si taille impossible (error)
     if (validationStatus === 'error') {
         const speciesName = currentSpeciesData ? (lang === 'fr' ? currentSpeciesData.fr : currentSpeciesData.en) : formData.species;
         alert(t.validation.sizeImpossible.replace('{species}', speciesName));
@@ -273,6 +316,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           weatherSnapshot: initialData?.weatherSnapshot || weather || undefined 
         };
         onSave(recordToSave);
+        clearDraft(); // Nettoyage après succès
     } catch (error) {
         console.error("Error preparing save:", error);
         alert("Erreur lors de la sauvegarde.");
@@ -280,8 +324,11 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     }
   };
 
-  // Helper to determine if we should show the full alert box
-  // We show alert if Required OR Validated (to confirm it worked)
+  const handleCancel = () => {
+      clearDraft();
+      onCancel();
+  };
+
   const isRequired = complianceStatus === 'legal_declaration_required';
   const isValidated = complianceStatus === 'legal_declaration_validated';
   const showLegalAlert = isRequired || isValidated;
@@ -292,7 +339,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
         <h2 className={`text-2xl font-bold text-white ${textShadowClass}`}>
             {isEditMode ? t.editTitle : t.title}
         </h2>
-        <button onClick={onCancel} className={`flex items-center gap-2 transition-colors bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-white ${textShadowClass}`}>
+        <button onClick={handleCancel} className={`flex items-center gap-2 transition-colors bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-white ${textShadowClass}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
           </svg>
@@ -548,7 +595,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                             href="https://www.mer.gouv.fr/peche-de-loisir-declaration-de-captures" 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            onClick={() => setComplianceStatus('legal_declaration_validated')}
+                            onClick={handleLegalLinkClick}
                             className="w-full mt-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg text-center transition-all border border-white/20 flex items-center justify-center gap-2"
                         >
                             <span>Remplir ma déclaration (CERFA)</span>

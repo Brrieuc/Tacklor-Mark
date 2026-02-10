@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
-import { Leaderboard } from './components/Leaderboard'; // Import Leaderboard
+import { Leaderboard } from './components/Leaderboard';
+import { ProfileModal } from './components/ProfileModal'; // Import ProfileModal
 import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
 import { fetchUserCaptures, saveCapture, deleteCapture, updateCapture } from './services/storageService';
@@ -13,12 +14,14 @@ export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
   
   const [catches, setCatches] = useState<CatchRecord[]>([]);
-  // State pour stocker la prise en cours d'édition
   const [editingCatch, setEditingCatch] = useState<CatchRecord | null>(null);
   
   // Auth State
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  
+  // Profile Modal State
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const [lang, setLang] = useState<Language>('fr');
   const [theme, setTheme] = useState<Theme>('dark');
@@ -38,7 +41,11 @@ export default function App() {
     let unsubscribe = () => {};
 
     const init = async () => {
-        // Fetch Weather
+        const draft = localStorage.getItem('tacklor_catch_draft');
+        if (draft) {
+             setView(ViewState.NEW_CATCH);
+        }
+
         const weather = await fetchCurrentWeather();
         if (weather) {
             setWeatherData(weather);
@@ -47,14 +54,12 @@ export default function App() {
             setLocationError(true);
         }
 
-        // Firebase Auth Listener
         if (auth) {
             unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
                 setUser(currentUser);
                 setAuthLoading(false);
                 
                 if (currentUser) {
-                    // Si connecté : on charge les données Firebase de l'utilisateur
                     setDataLoading(true);
                     try {
                         const data = await fetchUserCaptures(currentUser.uid);
@@ -65,12 +70,10 @@ export default function App() {
                         setDataLoading(false);
                     }
                 } else {
-                    // Si déconnecté : on vide les données pour la confidentialité
                     setCatches([]);
                 }
             });
         } else {
-            // Si Firebase n'est pas dispo du tout
             setAuthLoading(false);
             setCatches([]);
         }
@@ -78,7 +81,6 @@ export default function App() {
 
     init();
 
-    // Scroll Listener
     const handleScroll = () => {
         const currentY = window.scrollY;
         setIsScrolled(prevIsScrolled => {
@@ -106,9 +108,6 @@ export default function App() {
     setDataLoading(true);
     try {
         let updatedLogbook;
-        
-        // Si editingCatch est présent, on met à jour, sinon on crée
-        // NOTE: On passe 'user' pour pouvoir mettre à jour le Leaderboard
         if (editingCatch) {
             updatedLogbook = await updateCapture(record, user);
         } else {
@@ -117,7 +116,7 @@ export default function App() {
         
         setCatches(updatedLogbook);
         setView(ViewState.DASHBOARD);
-        setEditingCatch(null); // Reset edit mode
+        setEditingCatch(null);
     } catch (e) {
         console.error(e);
         alert("Erreur lors de la sauvegarde sur le cloud.");
@@ -135,7 +134,6 @@ export default function App() {
     if (!user) return;
     
     try {
-        // NOTE: On passe 'user' pour la mise à jour Leaderboard après suppression
         await deleteCapture(id, user);
         setCatches(prev => prev.filter(c => c.id !== id));
     } catch (error) {
@@ -147,7 +145,6 @@ export default function App() {
   const handleLogin = async () => {
       try {
           await signInWithGoogle();
-          // onAuthStateChanged will handle the rest
       } catch (e: any) {
           console.error("Login Error:", e);
           alert(`Erreur de connexion Google : ${e.message || e.code || "Erreur inconnue"}`);
@@ -192,7 +189,6 @@ export default function App() {
             {/* Navigation Actions */}
             <div className="flex items-center gap-2 md:gap-3">
               
-              {/* Leaderboard Button (Only visible if not scrolled for better space or simple icon if scrolled) */}
               <button 
                 onClick={() => setView(ViewState.LEADERBOARD)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border text-white ${textShadowClass} ${view === ViewState.LEADERBOARD ? 'bg-yellow-500/20 border-yellow-400/50 text-yellow-200' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
@@ -230,20 +226,24 @@ export default function App() {
                {authLoading ? (
                    <div className="w-9 h-9 rounded-full bg-white/20 animate-pulse"></div>
                ) : user ? (
-                 <div className="relative group">
-                    <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shadow-md transition-transform hover:scale-105">
+                 <>
+                    {/* User Avatar - CLICK to open Profile Modal */}
+                    <button 
+                        onClick={() => setIsProfileOpen(true)}
+                        className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shadow-md transition-transform hover:scale-105 cursor-pointer"
+                    >
                         <img src={user.photoURL || "https://ui-avatars.com/api/?name=" + user.displayName} alt={user.displayName || "User"} className="w-full h-full object-cover" />
                     </button>
-                    {/* Dropdown Logout */}
-                    <div className="absolute right-0 top-full mt-2 w-32 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                        <button 
-                            onClick={logoutUser}
-                            className="w-full text-left px-4 py-2 text-xs font-bold text-white bg-red-600/90 hover:bg-red-500 rounded-lg shadow-lg backdrop-blur-md"
-                        >
-                            Déconnexion
-                        </button>
-                    </div>
-                 </div>
+                    
+                    {/* Profile Modal */}
+                    <ProfileModal 
+                        isOpen={isProfileOpen}
+                        onClose={() => setIsProfileOpen(false)}
+                        user={user}
+                        lang={lang}
+                        theme={theme}
+                    />
+                 </>
                ) : (
                  <button 
                     onClick={handleLogin}
