@@ -3,7 +3,7 @@ import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
 import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
-import { fetchUserCaptures, saveCapture, deleteCapture } from './services/storageService';
+import { fetchUserCaptures, saveCapture, deleteCapture, updateCapture } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
 import { auth, signInWithGoogle, logoutUser } from './services/firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -12,6 +12,8 @@ export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
   
   const [catches, setCatches] = useState<CatchRecord[]>([]);
+  // State pour stocker la prise en cours d'édition
+  const [editingCatch, setEditingCatch] = useState<CatchRecord | null>(null);
   
   // Auth State
   const [user, setUser] = useState<User | null>(null);
@@ -94,7 +96,7 @@ export default function App() {
     };
   }, []);
 
-  const handleSaveNewCatch = async (record: CatchRecord) => {
+  const handleSaveCatch = async (record: CatchRecord) => {
     if (!user) {
         alert("Veuillez vous connecter pour sauvegarder votre prise.");
         return;
@@ -102,16 +104,31 @@ export default function App() {
 
     setDataLoading(true);
     try {
-        const updatedLogbook = await saveCapture(record, user.uid);
+        let updatedLogbook;
+        
+        // Si editingCatch est présent, on met à jour, sinon on crée
+        if (editingCatch) {
+            updatedLogbook = await updateCapture(record, user.uid);
+        } else {
+            updatedLogbook = await saveCapture(record, user.uid);
+        }
+        
         setCatches(updatedLogbook);
         setView(ViewState.DASHBOARD);
+        setEditingCatch(null); // Reset edit mode
     } catch (e) {
+        console.error(e);
         alert("Erreur lors de la sauvegarde sur le cloud.");
     } finally {
         setDataLoading(false);
     }
   };
   
+  const handleEditRequest = (record: CatchRecord) => {
+      setEditingCatch(record);
+      setView(ViewState.NEW_CATCH);
+  };
+
   const handleDeleteCatch = async (id: string) => {
     if (!user) return;
     
@@ -160,7 +177,7 @@ export default function App() {
                 ${isScrolled ? 'shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-b' : 'shadow-2xl border'}
             `}
           >
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView(ViewState.DASHBOARD)}>
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setView(ViewState.DASHBOARD); setEditingCatch(null); }}>
                <img 
                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" 
                  alt="Tacklor Mark" 
@@ -245,8 +262,12 @@ export default function App() {
             catches={catches} 
             user={user}
             onAddNew={() => {
-                if(user) setView(ViewState.NEW_CATCH);
+                if(user) {
+                    setEditingCatch(null);
+                    setView(ViewState.NEW_CATCH);
+                }
             }} 
+            onEdit={handleEditRequest}
             onDelete={handleDeleteCatch}
             onLogin={handleLogin}
             lang={lang}
@@ -259,11 +280,15 @@ export default function App() {
         
         {view === ViewState.NEW_CATCH && (
           <NewCatchForm 
-            onSave={handleSaveNewCatch} 
-            onCancel={() => setView(ViewState.DASHBOARD)}
+            onSave={handleSaveCatch} 
+            onCancel={() => {
+                setEditingCatch(null);
+                setView(ViewState.DASHBOARD);
+            }}
             lang={lang}
             theme={theme}
             weather={weatherData}
+            initialData={editingCatch}
           />
         )}
       </main>

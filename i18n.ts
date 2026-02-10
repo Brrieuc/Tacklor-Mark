@@ -14,6 +14,7 @@ export const translations = {
       connectToStart: "Login / Sign up",
       totalCatches: "Total Catches",
       totalWeight: "Total Weight",
+      totalLength: "Total Length",
       verifiedCompliant: "Verified Compliant",
       emptyState: "No catches recorded yet. Start your adventure!",
       guestState: "Please log in to create your fishing logbook and save your catches to the cloud.",
@@ -29,17 +30,21 @@ export const translations = {
         sensitive: "Sensitive Species",
         technique: "Technique",
         spot: "Spot",
-        location: "Location"
+        location: "Location",
+        date: "Date"
       },
       actions: {
         declare: "Send Legal Declaration",
         delete: "Delete",
+        edit: "Edit Catch",
+        close: "Close",
         confirmDelete: "Are you sure you want to delete this catch? This action cannot be undone."
       }
     },
     form: {
-      back: "Back to Dashboard",
+      back: "Back",
       title: "New Entry",
+      editTitle: "Edit Entry",
       upload: {
         title: "Click to upload photo",
         subtitle: "or drag and drop"
@@ -70,7 +75,8 @@ export const translations = {
         legal_required: "Target species (Bass/Pollock) requires specific declaration."
       },
       adviceTitle: "Tacklor Guide AI Advice",
-      save: "Save to Logbook"
+      save: "Save to Logbook",
+      update: "Update Entry"
     },
     aiActive: "Gemini AI Active"
   },
@@ -87,6 +93,7 @@ export const translations = {
       connectToStart: "Connexion / Inscription",
       totalCatches: "Total Prises",
       totalWeight: "Poids Total",
+      totalLength: "Longueur Totale",
       verifiedCompliant: "Conformité Vérifiée",
       emptyState: "Aucune prise enregistrée. Commencez l'aventure !",
       guestState: "Veuillez vous connecter pour créer votre carnet de pêche et sauvegarder vos prises dans le cloud.",
@@ -102,19 +109,23 @@ export const translations = {
         sensitive: "Espèce Sensible",
         technique: "Technique",
         spot: "Poste",
-        location: "Lieu"
+        location: "Lieu",
+        date: "Date"
       },
       actions: {
         declare: "Envoyer la déclaration légale",
         delete: "Supprimer",
+        edit: "Modifier la prise",
+        close: "Fermer",
         confirmDelete: "Êtes-vous sûr de vouloir supprimer cette prise ? Cette action est irréversible."
       }
     },
     form: {
-      back: "Retour au tableau de bord",
+      back: "Retour",
       title: "Nouvelle Entrée",
+      editTitle: "Modifier l'entrée",
       upload: {
-        title: "Cliquez pour ajouter une photo",
+        title: "Cliquez pour changer la photo",
         subtitle: "ou glissez-déposez"
       },
       analyze: "Analyser la prise",
@@ -143,7 +154,8 @@ export const translations = {
         legal_required: "Espèce cible (Bar/Lieu) nécessitant une déclaration spécifique."
       },
       adviceTitle: "Conseil Tacklor Guide AI",
-      save: "Enregistrer"
+      save: "Enregistrer",
+      update: "Mettre à jour"
     },
     aiActive: "IA Gemini Active"
   }

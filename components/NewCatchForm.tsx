@@ -12,41 +12,49 @@ interface NewCatchFormProps {
   lang: Language;
   theme: Theme;
   weather: WeatherData | null;
+  initialData?: CatchRecord | null; // Props pour le mode édition
 }
 
 // Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
 const DEFAULT_IMAGE = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png";
 
-export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather }) => {
+export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather, initialData }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl || null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSaving, setIsSaving] = useState(false); 
+  const isEditMode = !!initialData;
   
-  // Initialisation de la date avec l'heure locale actuelle au format YYYY-MM-DDTHH:mm
+  // Initialisation de la date
   const [catchDate, setCatchDate] = useState(() => {
+    if (initialData?.date) {
+        // Convert ISO string to datetime-local input format (YYYY-MM-DDTHH:mm)
+        const d = new Date(initialData.date);
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+    }
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
     return new Date(now.getTime() - offset).toISOString().slice(0, 16);
   });
 
   // Nouveau champ pour l'adresse / lieu géographique manuel
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(initialData?.location || '');
 
-  // Initialisation avec des valeurs vides pour permettre la saisie manuelle immédiate
+  // Initialisation du formulaire
   const [formData, setFormData] = useState<CatchAnalysis>({
-    species: '',
-    length_cm: 0,
-    weight_kg: 0,
-    is_sensitive_species: false,
-    technique: '',
-    spot_type: ''
+    species: initialData?.species || '',
+    length_cm: initialData?.length_cm || 0,
+    weight_kg: initialData?.weight_kg || 0,
+    is_sensitive_species: initialData?.is_sensitive_species || false,
+    technique: initialData?.technique || '',
+    spot_type: initialData?.spot_type || ''
   });
 
-  const [complianceStatus, setComplianceStatus] = useState<CatchRecord['complianceStatus']>('pending');
+  const [complianceStatus, setComplianceStatus] = useState<CatchRecord['complianceStatus']>(initialData?.complianceStatus || 'pending');
   const [complianceMessage, setComplianceMessage] = useState<string>('');
-  const [aiAdvice, setAiAdvice] = useState<string>('');
+  const [aiAdvice, setAiAdvice] = useState<string>(initialData?.aiAdvice || '');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -57,13 +65,12 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
   const inputClass = 'bg-black/20 border-white/20 text-white focus:ring-blue-500/50 placeholder-white/40 shadow-inner';
 
-  // Auto-fill Location if weather contains location name (Reverse Geo)
-  // On ne remplit que si le champ est vide pour ne pas écraser une saisie utilisateur lors d'un re-render
+  // Auto-fill Location if weather contains location name (Reverse Geo) - ONLY if not editing and field is empty
   useEffect(() => {
-    if (weather?.locationName && !location) {
+    if (!isEditMode && weather?.locationName && !location) {
         setLocation(weather.locationName);
     }
-  }, [weather]);
+  }, [weather, isEditMode]);
 
   // Déclenche la vérification de conformité lorsque les données changent (Debounce simple)
   useEffect(() => {
@@ -77,7 +84,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      // Revoke only if it was a blob URL created by user selection
+      if (previewUrl && previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
@@ -90,16 +98,22 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!file && !isEditMode) return;
+    if (!file && isEditMode) {
+        alert("Veuillez sélectionner une nouvelle image pour relancer l'analyse.");
+        return;
+    }
 
     setIsAnalyzing(true);
     try {
-      const result = await analyzeCatchImage(file, lang);
-      setFormData(prev => ({
-          ...result,
-          technique: result.technique || prev.technique,
-          spot_type: result.spot_type || prev.spot_type
-      }));
+      if(file) {
+        const result = await analyzeCatchImage(file, lang);
+        setFormData(prev => ({
+            ...result,
+            technique: result.technique || prev.technique,
+            spot_type: result.spot_type || prev.spot_type
+        }));
+      }
     } catch (error) {
       alert("Impossible d'analyser l'image. Veuillez réessayer.");
     } finally {
@@ -113,7 +127,11 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       const result: ProcessingResult = await processFishingData(data, lang);
       setComplianceStatus(result.status);
       setComplianceMessage(result.message);
-      if (!aiAdvice || isAnalyzing) {
+      // On garde l'ancien conseil si on édite, sauf si l'analyse vient de tourner
+      if ((!aiAdvice || isAnalyzing) && !isEditMode) {
+          setAiAdvice(result.advice);
+      } else if (isAnalyzing && isEditMode) {
+          // Si on analyse explicitement en mode edit, on met à jour
           setAiAdvice(result.advice);
       }
     } catch (error) {
@@ -131,23 +149,23 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
     setIsSaving(true);
     try {
-        let imageToSave = DEFAULT_IMAGE;
+        let imageToSave = initialData?.imageUrl || DEFAULT_IMAGE;
         
         if (file) {
             imageToSave = await compressImage(file);
         }
 
-        const newRecord: CatchRecord = {
+        const recordToSave: CatchRecord = {
           ...formData,
-          id: crypto.randomUUID(), 
+          id: initialData?.id || crypto.randomUUID(), 
           date: new Date(catchDate).toISOString(), 
           imageUrl: imageToSave,
           complianceStatus: complianceStatus,
           aiAdvice: aiAdvice,
-          location: location, // On sauvegarde la saisie manuelle de l'utilisateur
-          weatherSnapshot: weather || undefined 
+          location: location, 
+          weatherSnapshot: initialData?.weatherSnapshot || weather || undefined 
         };
-        onSave(newRecord);
+        onSave(recordToSave);
     } catch (error) {
         console.error("Error preparing save:", error);
         alert("Erreur lors de la sauvegarde.");
@@ -158,6 +176,9 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   return (
     <div className="w-full max-w-2xl mx-auto p-4 pb-20">
       <div className="flex items-center justify-between mb-6">
+        <h2 className={`text-2xl font-bold text-white ${textShadowClass}`}>
+            {isEditMode ? t.editTitle : t.title}
+        </h2>
         <button onClick={onCancel} className={`flex items-center gap-2 transition-colors bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-white ${textShadowClass}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -170,19 +191,19 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
         {/* Photo Upload Area */}
         <div 
           className={`relative w-full aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all border-white/30 hover:bg-white/10 cursor-pointer`}
-          onClick={() => !previewUrl && fileInputRef.current?.click()}
+          onClick={() => fileInputRef.current?.click()}
         >
           {previewUrl ? (
             <>
               <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-              <button 
-                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFile(null); }}
+              <div 
                 className="absolute top-4 right-4 p-2 bg-black/50 backdrop-blur-md rounded-full hover:bg-black/70 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFile(null); }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-              </button>
+              </div>
               
                <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
                   <button
@@ -369,7 +390,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
               disabled={isSaving}
               className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
             >
-              {isSaving ? "Sauvegarde..." : t.save}
+              {isSaving ? "Sauvegarde..." : (isEditMode ? t.update : t.save)}
             </button>
           </div>
       </GlassCard>

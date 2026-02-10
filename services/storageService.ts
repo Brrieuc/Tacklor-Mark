@@ -1,6 +1,6 @@
 import { CatchRecord } from "../types";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
 
 // --- Image Compression Logic ---
 export const compressImage = (file: File): Promise<string> => {
@@ -119,6 +119,34 @@ export const saveCapture = async (newCatch: CatchRecord, userId?: string | null)
       console.error("Erreur lors de la sauvegarde de la capture:", e);
       throw e;
   }
+};
+
+/**
+ * Met à jour une prise existante dans Firebase.
+ */
+export const updateCapture = async (updatedCatch: CatchRecord, userId?: string | null): Promise<CatchRecord[]> => {
+    if (!userId || !db) {
+        throw new Error("Utilisateur non authentifié.");
+    }
+
+    try {
+        const catchRef = doc(db, "captures", updatedCatch.id);
+        
+        // On ne met pas à jour userId ni createdAt, mais on peut mettre à jour updatedAt si on veut
+        // On extrait les champs modifiables
+        const { id, ...dataToUpdate } = updatedCatch;
+
+        await updateDoc(catchRef, {
+            ...dataToUpdate,
+            updatedAt: serverTimestamp()
+        });
+        
+        // On recharge la liste mise à jour
+        return await fetchUserCaptures(userId);
+    } catch (e) {
+        console.error("Erreur lors de la mise à jour de la capture:", e);
+        throw e;
+    }
 };
 
 /**

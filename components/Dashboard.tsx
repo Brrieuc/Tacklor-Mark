@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CatchRecord, Language, Theme, WeatherData } from '../types';
 import { GlassCard } from './GlassCard';
 import { translations } from '../i18n';
@@ -7,6 +7,7 @@ import { User } from 'firebase/auth';
 interface DashboardProps {
   catches: CatchRecord[];
   onAddNew: () => void;
+  onEdit: (record: CatchRecord) => void;
   onDelete: (id: string) => void;
   onLogin: () => void;
   user: User | null;
@@ -43,7 +44,9 @@ const StatusBadge: React.FC<{ status: CatchRecord['complianceStatus']; lang: Lan
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelete, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onEdit, onDelete, onLogin, user, lang, theme, weather, locationError, isScrolled }) => {
+  const [selectedCatch, setSelectedCatch] = useState<CatchRecord | null>(null);
+  
   const t = translations[lang].dashboard;
   const tWeather = translations[lang].weather;
   const isDark = theme === 'dark';
@@ -51,15 +54,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
   // Ombre portée adoucie
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   
+  // Calculs statistiques
+  const totalLengthCm = catches.reduce((acc, curr) => acc + curr.length_cm, 0);
+  const totalLengthDisplay = totalLengthCm >= 100 
+    ? `${(totalLengthCm / 100).toFixed(2)} m` 
+    : `${totalLengthCm} cm`;
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 pb-24">
       
-      {/* 
-         Sticky Header Area 
-         Optimized for Fluidity: Uses Flex-Wrap to allow Title to break to new line on Mobile (Not Scrolled).
-      */}
+      {/* Sticky Header Area */}
       <div 
-        className={`sticky top-[72px] sm:top-[80px] z-50 w-full flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
+        className={`sticky top-[72px] sm:top-[80px] z-40 w-full flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
             isScrolled 
             ? 'bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1 shadow-lg' 
             : 'px-1 py-2 bg-transparent border-transparent'
@@ -76,7 +82,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
           }`}>
             {t.title}
           </h1>
-          {/* Subtitle: Collapses smoothly with max-height and opacity */}
           <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
               isScrolled 
               ? 'max-h-0 opacity-0 mt-0' 
@@ -103,7 +108,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
-                        {/* Hide text on mobile unscrolled if space is tight, show on desktop */}
                         <span className={`hidden md:inline text-xs font-bold ml-2 transition-all duration-500 ${isScrolled ? 'max-w-0 opacity-0 !ml-0' : 'max-w-[100px] opacity-100'}`}>Loc. Off</span>
                     </div>
                 ) : !weather ? (
@@ -117,8 +121,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
                             <svg xmlns="http://www.w3.org/2000/svg" className={`text-yellow-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-5 w-5' : 'h-6 w-6'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            
-                            {/* Text Container: Max-width transition for smooth collapsing */}
                             <div className={`flex flex-col leading-none overflow-hidden transition-all duration-500 ease-in-out ${
                                 isScrolled 
                                 ? 'max-w-0 opacity-0 ml-0' 
@@ -130,11 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
                                 </span>
                             </div>
                         </div>
-                        
-                        {/* Divider */}
                         <div className={`w-px bg-white/30 transition-all duration-500 ${isScrolled ? 'h-3 mx-0.5' : 'h-6 mx-0 md:mx-1'}`}></div>
-                        
-                        {/* Wind Section */}
                         <div className={`flex items-center justify-center transition-all duration-500 ${textShadowClass}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className={`text-blue-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -171,7 +169,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
                         <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                 )}
-                {/* Text collapse transition */}
                 <span className={`font-medium whitespace-nowrap overflow-hidden transition-all duration-500 ease-in-out ${
                     isScrolled 
                     ? 'max-w-0 opacity-0 ml-0' 
@@ -185,22 +182,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
       </div>
 
       {/* Stats Overview */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ${textShadowClass}`}>
-        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-          <span className="text-5xl font-extrabold text-white">{catches.length}</span>
-          <span className="text-sm font-bold uppercase tracking-widest mt-2 text-white/70">{t.totalCatches}</span>
+      <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 ${textShadowClass}`}>
+        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
+          <span className="text-4xl md:text-5xl font-extrabold text-white">{catches.length}</span>
+          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalCatches}</span>
         </GlassCard>
-        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-          <span className="text-5xl font-extrabold text-white">
-            {catches.reduce((acc, curr) => acc + curr.weight_kg, 0).toFixed(3)} <span className="text-2xl font-normal opacity-60">kg</span>
+        
+        {/* NEW STAT: Total Length */}
+        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
+          <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
+            {totalLengthDisplay}
           </span>
-          <span className="text-sm font-bold uppercase tracking-widest mt-2 text-white/70">{t.totalWeight}</span>
+          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalLength}</span>
         </GlassCard>
-        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-8">
-          <span className="text-5xl font-extrabold text-green-400">
+
+        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
+          <span className="text-3xl md:text-4xl font-extrabold text-white truncate max-w-full">
+            {catches.reduce((acc, curr) => acc + curr.weight_kg, 0).toFixed(3)} <span className="text-lg md:text-2xl font-normal opacity-60">kg</span>
+          </span>
+          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.totalWeight}</span>
+        </GlassCard>
+        
+        <GlassCard theme={theme} className="flex flex-col items-center justify-center py-6 md:py-8">
+          <span className="text-4xl md:text-5xl font-extrabold text-green-400">
             {catches.filter(c => c.complianceStatus === 'compliant').length}
           </span>
-          <span className="text-sm font-bold uppercase tracking-widest mt-2 text-white/70">{t.verifiedCompliant}</span>
+          <span className="text-xs md:text-sm font-bold uppercase tracking-widest mt-2 text-white/70 text-center">{t.verifiedCompliant}</span>
         </GlassCard>
       </div>
 
@@ -245,105 +252,186 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, onDelet
           </div>
         ) : (
           catches.map((catchItem) => (
-            <GlassCard key={catchItem.id} theme={theme} className="group hover:-translate-y-1 transition-transform p-0 overflow-hidden flex flex-col h-full relative">
-              
-              {/* Delete Button (Visible on Hover of the card or always for touch) */}
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (window.confirm(translations[lang].dashboard.actions.confirmDelete)) {
-                    onDelete(catchItem.id);
-                  }
-                }}
-                className="absolute top-3 right-3 z-10 p-2 bg-black/40 hover:bg-red-600 backdrop-blur-md rounded-full text-white transition-colors border border-white/10 shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
-                aria-label={t.actions.delete}
-                title={t.actions.delete}
-              >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                 </svg>
-              </button>
-
-              {/* Image Section */}
-              <div className="relative h-56 w-full overflow-hidden">
-                <img 
-                  src={catchItem.imageUrl} 
-                  alt={catchItem.species} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                
-                {/* Species Badge Overlay */}
-                <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm ${getSpeciesBadgeColor(catchItem.species)}`}>
-                   {catchItem.species}
-                </div>
-
-                {/* Status Badge - Shifted left to avoid delete button */}
-                <div className="absolute top-3 right-14">
-                  <StatusBadge status={catchItem.complianceStatus} lang={lang} />
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <p className="text-xs text-white/90 font-medium">{new Date(catchItem.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>
-                </div>
-              </div>
-
-              {/* Data Section */}
-              <div className={`p-5 flex-grow flex flex-col justify-between space-y-4 ${textShadowClass}`}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider block text-white/60">{t.labels.length}</span>
-                    <span className="text-xl font-bold text-white">{catchItem.length_cm} cm</span>
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider block text-white/60">{t.labels.weight}</span>
-                    <span className="text-xl font-bold text-white">{catchItem.weight_kg.toFixed(3)} kg</span>
-                  </div>
-                </div>
-
-                {/* Additional Info (Location, Technique, Spot) */}
-                {(catchItem.location || catchItem.technique || catchItem.spot_type) && (
-                    <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3 border-white/20 text-white/80">
-                         {/* Location (Full width if available) */}
-                        {catchItem.location && (
-                            <div className="col-span-2 flex items-center gap-1 text-white/90 mb-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-300" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="font-bold">{catchItem.location}</span>
-                            </div>
-                        )}
-                        {catchItem.technique && <div><span className="opacity-60 block font-semibold">{t.labels.technique}</span>{catchItem.technique}</div>}
-                        {catchItem.spot_type && <div><span className="opacity-60 block font-semibold">{t.labels.spot}</span>{catchItem.spot_type}</div>}
+            <GlassCard 
+                key={catchItem.id} 
+                theme={theme} 
+                className="group hover:-translate-y-1 transition-transform p-0 overflow-hidden flex flex-col h-full relative cursor-pointer"
+            >
+              <div onClick={() => setSelectedCatch(catchItem)} className="flex flex-col h-full">
+                {/* Image Section */}
+                <div className="relative h-56 w-full overflow-hidden">
+                    <img 
+                    src={catchItem.imageUrl} 
+                    alt={catchItem.species} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    
+                    {/* Species Badge Overlay */}
+                    <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md shadow-sm ${getSpeciesBadgeColor(catchItem.species)}`}>
+                    {catchItem.species}
                     </div>
-                )}
-                
-                {/* Legal Action Button for Restricted Species */}
-                {catchItem.complianceStatus === 'legal_declaration_required' && (
-                    <button className="w-full py-2 bg-purple-600/90 hover:bg-purple-500 text-white text-xs font-bold uppercase rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm border border-purple-400/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {t.actions.declare}
-                    </button>
-                )}
 
-                {/* AI Advice Snippet */}
-                {catchItem.aiAdvice && (
-                    <div className="p-3 rounded-lg border bg-black/20 border-white/10">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-300" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-blue-200/80">Tacklor AI</span>
+                    {/* Status Badge */}
+                    <div className="absolute top-3 right-3">
+                        <StatusBadge status={catchItem.complianceStatus} lang={lang} />
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <p className="text-xs text-white/90 font-medium">{new Date(catchItem.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>
+                    </div>
+                </div>
+
+                {/* Data Section */}
+                <div className={`p-5 flex-grow flex flex-col justify-between space-y-4 ${textShadowClass}`}>
+                    <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <span className="text-xs font-semibold uppercase tracking-wider block text-white/60">{t.labels.length}</span>
+                        <span className="text-xl font-bold text-white">{catchItem.length_cm} cm</span>
+                    </div>
+                    <div>
+                        <span className="text-xs font-semibold uppercase tracking-wider block text-white/60">{t.labels.weight}</span>
+                        <span className="text-xl font-bold text-white">{catchItem.weight_kg.toFixed(3)} kg</span>
+                    </div>
+                    </div>
+
+                    {/* Additional Info (Location, Technique, Spot) */}
+                    {(catchItem.location || catchItem.technique || catchItem.spot_type) && (
+                        <div className="grid grid-cols-2 gap-2 text-xs border-t pt-3 border-white/20 text-white/80">
+                            {/* Location (Full width if available) */}
+                            {catchItem.location && (
+                                <div className="col-span-2 flex items-center gap-1 text-white/90 mb-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-300" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="font-bold truncate">{catchItem.location}</span>
+                                </div>
+                            )}
+                            {catchItem.technique && <div><span className="opacity-60 block font-semibold">{t.labels.technique}</span>{catchItem.technique}</div>}
+                            {catchItem.spot_type && <div><span className="opacity-60 block font-semibold">{t.labels.spot}</span>{catchItem.spot_type}</div>}
                         </div>
-                        <p className="text-xs italic text-white/90">"{catchItem.aiAdvice}"</p>
-                    </div>
-                )}
+                    )}
+                </div>
               </div>
             </GlassCard>
           ))
         )}
       </div>
+
+      {/* Details Modal */}
+      {selectedCatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in" onClick={() => setSelectedCatch(null)}>
+            <div 
+                className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-gray-900 border border-white/20 shadow-2xl relative flex flex-col md:flex-row animate-scale-in"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close Button */}
+                <button 
+                    onClick={() => setSelectedCatch(null)}
+                    className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-white/20 rounded-full text-white transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                {/* Left: Image (Full height on desktop, top on mobile) */}
+                <div className="w-full md:w-1/2 h-64 md:h-auto relative">
+                    <img 
+                        src={selectedCatch.imageUrl} 
+                        alt={selectedCatch.species} 
+                        className="w-full h-full object-cover"
+                    />
+                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-6 md:hidden">
+                        <h2 className="text-3xl font-bold text-white drop-shadow-md">{selectedCatch.species}</h2>
+                     </div>
+                </div>
+
+                {/* Right: Details */}
+                <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col text-white">
+                    <h2 className="text-3xl font-bold mb-1 hidden md:block">{selectedCatch.species}</h2>
+                    <p className="text-white/60 text-sm mb-6 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {new Date(selectedCatch.date).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'long', timeStyle: 'short' })}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                            <span className="text-xs uppercase tracking-wider text-white/50 block mb-1">{t.labels.length}</span>
+                            <span className="text-2xl font-bold">{selectedCatch.length_cm} cm</span>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                            <span className="text-xs uppercase tracking-wider text-white/50 block mb-1">{t.labels.weight}</span>
+                            <span className="text-2xl font-bold">{selectedCatch.weight_kg.toFixed(3)} kg</span>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-4 mb-8 flex-grow">
+                         {selectedCatch.location && (
+                            <div className="flex items-start gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
+                                <div>
+                                    <span className="block text-sm font-semibold text-white/60">{t.labels.location}</span>
+                                    <span className="text-lg">{selectedCatch.location}</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                             <div>
+                                <span className="block text-sm font-semibold text-white/60">{t.labels.technique}</span>
+                                <span className="text-base">{selectedCatch.technique || "-"}</span>
+                             </div>
+                             <div>
+                                <span className="block text-sm font-semibold text-white/60">{t.labels.spot}</span>
+                                <span className="text-base">{selectedCatch.spot_type || "-"}</span>
+                             </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-white/10">
+                            <span className="block text-sm font-semibold text-white/60 mb-2">Statut</span>
+                            <StatusBadge status={selectedCatch.complianceStatus} lang={lang} />
+                        </div>
+
+                         {selectedCatch.aiAdvice && (
+                            <div className="mt-4 p-4 rounded-xl bg-blue-900/20 border border-blue-500/30 text-sm italic text-blue-100/90">
+                                "{selectedCatch.aiAdvice}"
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-4 mt-auto">
+                        <button 
+                            onClick={() => {
+                                if (window.confirm(t.actions.confirmDelete)) {
+                                    onDelete(selectedCatch.id);
+                                    setSelectedCatch(null);
+                                }
+                            }}
+                            className="px-6 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold transition-colors border border-red-500/20"
+                        >
+                            {t.actions.delete}
+                        </button>
+                        <button 
+                            onClick={() => {
+                                onEdit(selectedCatch);
+                                setSelectedCatch(null);
+                            }}
+                            className="flex-1 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors shadow-lg border border-white/10 flex justify-center items-center gap-2"
+                        >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                           </svg>
+                           {t.actions.edit}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
