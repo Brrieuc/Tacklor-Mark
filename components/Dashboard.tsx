@@ -44,7 +44,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
   const tWeather = translations[lang].weather;
   const isDark = theme === 'dark';
 
-  // Ombre portée adoucie : Alpha 0.5 au lieu de 0.8
+  // Ombre portée adoucie
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   
   return (
@@ -52,83 +52,117 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
       
       {/* 
          Sticky Header Area 
-         Compact transition on scroll.
+         Optimized for Fluidity: Uses constant Flex-Row structure with max-width/opacity transitions.
       */}
       <div 
-        className={`sticky top-[80px] z-50 w-full flex flex-col md:flex-row justify-between gap-4 transition-all duration-500 ease-in-out rounded-2xl ${
+        className={`sticky top-[72px] sm:top-[80px] z-50 w-full flex flex-row items-center justify-between gap-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
             isScrolled 
-            ? 'bg-black/40 backdrop-blur-xl border border-white/10 px-4 py-0.5 shadow-lg items-center' 
-            : 'px-2 py-2 items-end'
+            ? 'bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1 shadow-lg' 
+            : 'px-1 py-2 bg-transparent border-transparent'
         }`}
       >
-        <div className="transition-all duration-500">
-          <h1 className={`font-extrabold tracking-tight text-white ${textShadowClass} transition-all duration-500 ${isScrolled ? 'text-xl mb-0' : 'text-5xl'}`}>
+        {/* Left Side: Title Area */}
+        <div className="flex flex-col justify-center transition-all duration-500 min-w-0 flex-shrink">
+          <h1 className={`font-extrabold tracking-tight text-white ${textShadowClass} transition-all duration-500 whitespace-nowrap origin-left ${
+              isScrolled 
+              ? 'text-lg md:text-xl mb-0' 
+              : 'text-3xl md:text-5xl'
+          }`}>
             {t.title}
           </h1>
-          <p className={`text-white/90 font-medium ${textShadowClass} transition-all duration-500 overflow-hidden ${isScrolled ? 'h-0 opacity-0 mt-0' : 'h-auto opacity-100 mt-2 text-xl'}`}>
-             {t.subtitle}
-          </p>
+          {/* Subtitle: Collapses smoothly with max-height and opacity */}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+              isScrolled 
+              ? 'max-h-0 opacity-0 mt-0' 
+              : 'max-h-10 opacity-100 mt-1 md:mt-2'
+          }`}>
+            <p className={`text-white/90 font-medium ${textShadowClass} text-sm md:text-xl truncate`}>
+                {t.subtitle}
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-3">
-            {/* Weather Widget - Dynamic Resizing */}
-            <GlassCard theme={theme} className={`flex items-center !rounded-full shadow-lg backdrop-blur-md transition-all duration-500 ${isScrolled ? 'w-auto !py-0.5 !px-2 gap-1' : '!p-3 min-w-[180px] gap-4'}`}>
+        {/* Right Side: Widgets Area */}
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            {/* Weather Widget */}
+            <GlassCard theme={theme} className={`flex items-center !rounded-full shadow-lg backdrop-blur-md transition-all duration-500 border border-white/20 ${
+                isScrolled 
+                ? 'w-auto !py-1 !px-2 gap-1 bg-black/20' 
+                : '!p-2 md:!p-3 gap-2 md:gap-4 bg-black/20 md:min-w-[180px]'
+            }`}>
                 {locationError ? (
-                    <div className={`flex items-center gap-2 text-red-400 ${textShadowClass}`}>
+                    <div className={`flex items-center justify-center text-red-400 ${textShadowClass}`}>
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
-                        {!isScrolled && <span className="text-xs font-bold">Loc. Désactivée</span>}
+                        {/* Hide text on mobile unscrolled if space is tight, show on desktop */}
+                        <span className={`hidden md:inline text-xs font-bold ml-2 transition-all duration-500 ${isScrolled ? 'max-w-0 opacity-0 !ml-0' : 'max-w-[100px] opacity-100'}`}>Loc. Off</span>
                     </div>
                 ) : !weather ? (
                     <div className="flex items-center gap-2 animate-pulse">
                          <div className="w-5 h-5 rounded-full bg-white/20"></div>
-                         {!isScrolled && <span className="text-xs text-white/70">Chargement...</span>}
                     </div>
                 ) : (
                     <>
                         {/* Temp Section */}
-                        <div className={`flex items-center transition-all duration-500 ${isScrolled ? 'gap-0 justify-center' : 'gap-2'} ${textShadowClass}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-yellow-300 transition-all duration-500 ${isScrolled ? 'h-5 w-5' : 'h-6 w-6'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className={`flex items-center justify-center transition-all duration-500 ${textShadowClass}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-yellow-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-5 w-5' : 'h-6 w-6'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            {/* Hide text on scroll */}
-                            <div className={`flex flex-col leading-none transition-all duration-500 ${isScrolled ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}`}>
-                                <span className="text-sm font-bold text-white">{Math.round(weather.temp)}°C</span>
-                                <span className="text-[10px] text-white/80 truncate max-w-[80px]">
+                            
+                            {/* Text Container: Max-width transition for smooth collapsing */}
+                            <div className={`flex flex-col leading-none overflow-hidden transition-all duration-500 ease-in-out ${
+                                isScrolled 
+                                ? 'max-w-0 opacity-0 ml-0' 
+                                : 'max-w-[80px] md:max-w-[100px] opacity-100 ml-1.5 md:ml-2'
+                            }`}>
+                                <span className="text-sm font-bold text-white whitespace-nowrap">{Math.round(weather.temp)}°C</span>
+                                <span className="text-[10px] text-white/80 truncate hidden sm:block">
                                     {weather.locationName || tWeather.temp}
                                 </span>
                             </div>
                         </div>
                         
-                        <div className={`w-px bg-white/30 transition-all duration-500 ${isScrolled ? 'h-3 mx-1' : 'h-6'}`}></div>
+                        {/* Divider */}
+                        <div className={`w-px bg-white/30 transition-all duration-500 ${isScrolled ? 'h-3 mx-0.5' : 'h-6 mx-0 md:mx-1'}`}></div>
                         
                         {/* Wind Section */}
-                        <div className={`flex items-center transition-all duration-500 ${isScrolled ? 'gap-0 justify-center' : 'gap-2'} ${textShadowClass}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-blue-300 transition-all duration-500 ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className={`flex items-center justify-center transition-all duration-500 ${textShadowClass}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`text-blue-300 transition-all duration-500 flex-shrink-0 ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                             {/* Hide text on scroll */}
-                            <div className={`flex flex-col leading-none transition-all duration-500 ${isScrolled ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}`}>
-                                <span className="text-sm font-bold text-white">{Math.round(weather.wind)} <span className="text-[9px]">km/h</span></span>
-                                <span className="text-[10px] text-white/80">{weather.desc}</span>
+                             <div className={`flex flex-col leading-none overflow-hidden transition-all duration-500 ease-in-out ${
+                                 isScrolled 
+                                 ? 'max-w-0 opacity-0 ml-0' 
+                                 : 'max-w-[80px] md:max-w-[100px] opacity-100 ml-1.5 md:ml-2'
+                             }`}>
+                                <span className="text-sm font-bold text-white whitespace-nowrap">{Math.round(weather.wind)} <span className="text-[9px]">km/h</span></span>
+                                <span className="text-[10px] text-white/80 truncate hidden sm:block">{weather.desc}</span>
                             </div>
                         </div>
                     </>
                 )}
             </GlassCard>
 
-            {/* New Catch Button - Rounded circle on scroll */}
+            {/* New Catch Button */}
             <button
             onClick={onAddNew}
-            className={`group relative rounded-full border transition-all duration-300 backdrop-blur-md shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95 bg-white/20 hover:bg-white/30 border-white/30 text-white ${textShadowClass} ${isScrolled ? 'p-2 aspect-square' : 'px-6 py-3'}`}
+            className={`group relative rounded-full border transition-all duration-500 backdrop-blur-md shadow-lg hover:shadow-xl active:scale-95 bg-white/20 hover:bg-white/30 border-white/30 text-white ${textShadowClass} ${
+                isScrolled 
+                ? 'p-1.5 aspect-square flex items-center justify-center w-8 h-8 md:w-9 md:h-9' 
+                : 'px-4 py-2 md:px-6 md:py-3 h-auto'
+            }`}
             >
-            <div className={`flex items-center justify-center h-full transition-all duration-500 ${isScrolled ? 'gap-0' : 'gap-2'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <div className={`flex items-center justify-center h-full transition-all duration-500`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`flex-shrink-0 transition-all duration-500 ${isScrolled ? 'w-5 h-5' : 'w-5 h-5'}`} viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
-                {/* Hide text on scroll */}
-                <span className={`font-medium transition-all duration-500 whitespace-nowrap ${isScrolled ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}`}>
+                {/* Text collapse transition */}
+                <span className={`font-medium whitespace-nowrap overflow-hidden transition-all duration-500 ease-in-out ${
+                    isScrolled 
+                    ? 'max-w-0 opacity-0 ml-0' 
+                    : 'max-w-[150px] opacity-100 ml-2'
+                }`}>
                     {t.newCatch}
                 </span>
             </div>
