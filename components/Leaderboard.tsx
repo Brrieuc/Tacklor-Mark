@@ -48,6 +48,14 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ lang, theme, userCurre
       }
   };
 
+  // Helper to display age if present
+  const renderAge = (entry: LeaderboardEntry) => {
+      if (entry.age) {
+          return <span className="text-white/40 text-xs ml-2 font-normal">({entry.age} ans)</span>;
+      }
+      return null;
+  };
+
   // Podium rendering helper
   const renderPodiumStep = (entry: LeaderboardEntry | undefined, rank: 1 | 2 | 3) => {
     if (!entry) return <div className="flex-1"></div>;
@@ -90,8 +98,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ lang, theme, userCurre
 
         {/* Podium Step */}
         <div className={`w-full ${heightClass} ${colorClass} rounded-t-xl border-t border-l border-r backdrop-blur-md flex flex-col items-center justify-start pt-4 px-2 text-center`}>
-            <span className={`font-bold text-white truncate w-full px-1 ${rank === 1 ? 'text-lg' : 'text-sm'}`}>
-                {entry.displayName}
+            <span className={`font-bold text-white truncate w-full px-1 flex flex-col justify-center items-center leading-tight ${rank === 1 ? 'text-lg' : 'text-sm'}`}>
+                <span>{entry.displayName}</span>
+                {entry.age && <span className="text-xs font-normal opacity-60 mt-0.5">{entry.age} ans</span>}
             </span>
             <span className="text-yellow-400 font-black text-xl md:text-2xl mt-1">
                 {getMetricDisplay(entry, category)}
@@ -176,8 +185,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ lang, theme, userCurre
                                             />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className={`font-bold ${isCurrentUser ? 'text-blue-200' : 'text-white'}`}>
+                                            <span className={`font-bold flex items-center ${isCurrentUser ? 'text-blue-200' : 'text-white'}`}>
                                                 {entry.displayName}
+                                                {renderAge(entry)}
                                             </span>
                                             <span className="text-xs text-white/40">
                                                 {entry.level}

@@ -122,17 +122,18 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
-          // On restaure les données
-          setFormData(parsed.formData);
-          setComplianceStatus(parsed.complianceStatus);
-          setLocation(parsed.location);
-          setAiAdvice(parsed.aiAdvice);
-          setCatchDate(parsed.catchDate);
-          
-          // Note: On ne peut pas restaurer l'image File object facilement, 
-          // mais on garde les données texte, ce qui est le plus important après un retour de lien externe.
+          // On restaure les données UNIQUEMENT si elles existent pour éviter d'écraser le state avec undefined
+          if (parsed && parsed.formData) {
+              setFormData(parsed.formData);
+              if (parsed.complianceStatus) setComplianceStatus(parsed.complianceStatus);
+              if (parsed.location) setLocation(parsed.location);
+              if (parsed.aiAdvice) setAiAdvice(parsed.aiAdvice);
+              if (parsed.catchDate) setCatchDate(parsed.catchDate);
+          }
         } catch (e) {
           console.error("Failed to parse draft", e);
+          // Nettoyage préventif
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
         }
       }
     }

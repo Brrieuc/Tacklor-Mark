@@ -18,7 +18,9 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, lang, theme }) => {
   const [displayName, setDisplayName] = useState(user.displayName || '');
   const [photoURL, setPhotoURL] = useState(user.photoURL || '');
+  const [birthDate, setBirthDate] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [showAge, setShowAge] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -38,6 +40,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
         setDisplayName(profile.displayName);
         setPhotoURL(profile.photoURL);
         setIsPublic(profile.isPublic);
+        setBirthDate(profile.birthDate || '');
+        setShowAge(profile.showAge || false);
         setIsLoading(false);
       }).catch(err => {
         console.error(err);
@@ -53,7 +57,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
       await saveUserProfile(user, {
         displayName,
         photoURL,
-        isPublic
+        isPublic,
+        birthDate,
+        showAge
       });
       setStatusMessage(t.saved);
       // Fermer après un court délai pour montrer le succès
@@ -78,7 +84,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" onClick={onClose}>
-      <GlassCard theme={theme} className="w-full max-w-md relative flex flex-col gap-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+      <GlassCard theme={theme} className="w-full max-w-md relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -137,7 +143,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, use
               />
             </div>
 
-            {/* Privacy Switch */}
+            {/* Date of Birth & Show Age Switch */}
+            <div className="grid grid-cols-1 gap-4">
+                 <div>
+                    <label className={labelClass}>{t.birthDate}</label>
+                    <input 
+                        type="date" 
+                        value={birthDate} 
+                        onChange={(e) => setBirthDate(e.target.value)} 
+                        className={`${inputClass} [color-scheme:dark]`}
+                    />
+                </div>
+                
+                {/* Age Visibility Switch */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                     <span className="text-sm font-medium text-white/80">{t.showAge}</span>
+                     <button 
+                        onClick={() => setShowAge(!showAge)}
+                        className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 focus:outline-none ${showAge ? 'bg-blue-500' : 'bg-gray-600'}`}
+                    >
+                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ${showAge ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </button>
+                </div>
+            </div>
+
+            {/* Privacy Switch (Public Profile) */}
             <div className="bg-white/5 p-4 rounded-xl border border-white/10">
                <div className="flex items-center justify-between mb-2">
                   <span className="font-bold text-white">{t.privacyTitle}</span>

@@ -41,9 +41,24 @@ export default function App() {
     let unsubscribe = () => {};
 
     const init = async () => {
+        // Check for existing draft in localStorage to recover view
+        // Cela évite l'écran noir si l'utilisateur revient d'un lien externe et que l'app a reload
         const draft = localStorage.getItem('tacklor_catch_draft');
         if (draft) {
-             setView(ViewState.NEW_CATCH);
+             try {
+                const parsed = JSON.parse(draft);
+                // CRITIQUE : On vérifie que le draft contient bien les données minimales (formData)
+                // Sinon on le supprime pour éviter que l'App plante en boucle sur NEW_CATCH avec des data corrompues.
+                if (parsed && parsed.formData) {
+                    setView(ViewState.NEW_CATCH);
+                } else {
+                    console.warn("Brouillon corrompu détecté, nettoyage...");
+                    localStorage.removeItem('tacklor_catch_draft');
+                }
+             } catch (e) {
+                console.error("Erreur lecture brouillon", e);
+                localStorage.removeItem('tacklor_catch_draft');
+             }
         }
 
         const weather = await fetchCurrentWeather();

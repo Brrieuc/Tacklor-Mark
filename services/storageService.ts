@@ -45,6 +45,21 @@ export const compressImage = (file: File): Promise<string> => {
   });
 };
 
+// --- Helper: Age Calculation ---
+export const calculateAge = (birthDateString?: string): number | undefined => {
+  if (!birthDateString) return undefined;
+  
+  const today = new Date();
+  const birthDate = new Date(birthDateString);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 // --- Profile & Privacy Management ---
 
 /**
@@ -66,7 +81,8 @@ export const fetchUserProfile = async (user: User): Promise<UserProfile> => {
             displayName: user.displayName || "Pêcheur Anonyme",
             photoURL: user.photoURL || "",
             isPublic: true, // Par défaut public
-            email: user.email || ""
+            email: user.email || "",
+            showAge: false
         };
     }
 };
@@ -74,8 +90,8 @@ export const fetchUserProfile = async (user: User): Promise<UserProfile> => {
 /**
  * Sauvegarde les modifications de profil.
  * 1. Met à jour le profil Firebase Auth (Display Name, PhotoURL)
- * 2. Enregistre dans 'users_profiles'
- * 3. Gère la visibilité dans 'leaderboard' (Supprime si privé, Update si public)
+ * 2. Enregistre dans 'users_profiles' (Données privées incluses: birthDate)
+ * 3. Gère la visibilité dans 'leaderboard' (Supprime si privé, Update si public, calcul de l'âge)
  */
 export const saveUserProfile = async (user: User, newProfileData: Partial<UserProfile>): Promise<void> => {
     if (!db) throw new Error("Database not initialized");
@@ -89,26 +105,28 @@ export const saveUserProfile = async (user: User, newProfileData: Partial<UserPr
             });
         }
 
-        // 2. Save to 'users_profiles' collection
+        // 2. Save to 'users_profiles' collection (PRIVATE)
         const profileRef = doc(db, "users_profiles", user.uid);
         const fullProfileData: UserProfile = {
             uid: user.uid,
             displayName: newProfileData.displayName || user.displayName || "Anonyme",
             photoURL: newProfileData.photoURL || user.photoURL || "",
             isPublic: newProfileData.isPublic !== undefined ? newProfileData.isPublic : true,
-            email: user.email || ""
+            email: user.email || "",
+            birthDate: newProfileData.birthDate || "", // Private
+            showAge: newProfileData.showAge !== undefined ? newProfileData.showAge : false
         };
         
         await setDoc(profileRef, fullProfileData, { merge: true });
 
-        // 3. Handle Leaderboard Privacy Logic
+        // 3. Handle Leaderboard Privacy Logic (PUBLIC)
         const leaderboardRef = doc(db, "leaderboard", user.uid);
         
         if (fullProfileData.isPublic === false) {
             // Si l'utilisateur passe en PRIVE -> On le supprime du leaderboard
             await deleteDoc(leaderboardRef);
         } else {
-            // Si l'utilisateur passe en PUBLIC -> On force la mise à jour des stats
+            // Si l'utilisateur passe en PUBLIC -> On force la mise à jour des stats (incluant l'âge)
             await updateUserLeaderboardStats(user, true); // Force update
         }
 
@@ -134,13 +152,16 @@ const calculateUserLevel = (catchCount: number): string => {
 /**
  * Met à jour le document de l'utilisateur dans la collection publique 'leaderboard'.
  * IMPORTANT : Vérifie d'abord si l'utilisateur est 'isPublic'.
+ * Gère le calcul dynamique de l'âge pour ne stocker que l'entier.
  * @param forceUpdate Si true, ignore la vérification de profil (utilisé quand on vient de passer en public)
  */
 const updateUserLeaderboardStats = async (user: User, forceUpdate = false) => {
     try {
-        // 0. Privacy Check
+        // 0. Privacy Check & Data Retrieval
+        // On récupère TOUJOURS le profil pour avoir les settings (birthDate, showAge) à jour
+        const profile = await fetchUserProfile(user);
+
         if (!forceUpdate) {
-            const profile = await fetchUserProfile(user);
             if (!profile.isPublic) {
                 // Si l'utilisateur est privé, on ne met PAS à jour le leaderboard.
                 // On s'assure même qu'il n'y est pas (sécurité doublon)
@@ -156,7 +177,13 @@ const updateUserLeaderboardStats = async (user: User, forceUpdate = false) => {
         const totalWeight = captures.reduce((acc, curr) => acc + (curr.weight_kg || 0), 0);
         const catchCount = captures.length;
 
-        // 2. Préparer les données publiques
+        // 2. Calculer l'âge SI autorisé
+        let publicAge: number | undefined = undefined;
+        if (profile.showAge && profile.birthDate) {
+            publicAge = calculateAge(profile.birthDate);
+        }
+
+        // 3. Préparer les données publiques
         const leaderboardData: LeaderboardEntry = {
             userId: user.uid,
             displayName: user.displayName || "Pêcheur Anonyme",
@@ -165,10 +192,12 @@ const updateUserLeaderboardStats = async (user: User, forceUpdate = false) => {
             total_weight_kg: totalWeight,
             catch_count: catchCount,
             level: calculateUserLevel(catchCount),
-            last_updated: serverTimestamp()
+            last_updated: serverTimestamp(),
+            // On ajoute l'âge calculé, mais JAMAIS la date de naissance
+            ...(publicAge !== undefined && { age: publicAge })
         };
 
-        // 3. Écrire
+        // 4. Écrire
         const leaderboardRef = doc(db, "leaderboard", user.uid);
         await setDoc(leaderboardRef, leaderboardData, { merge: true });
 

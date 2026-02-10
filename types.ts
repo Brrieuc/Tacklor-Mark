@@ -24,6 +24,8 @@ export interface UserProfile {
   photoURL: string;
   isPublic: boolean; // Determine si l'utilisateur apparaît dans le leaderboard
   email?: string;
+  birthDate?: string; // Format YYYY-MM-DD, stocké uniquement dans users_profiles (privé)
+  showAge?: boolean; // Préférence d'affichage
 }
 
 export interface LeaderboardEntry {
@@ -35,6 +37,7 @@ export interface LeaderboardEntry {
   catch_count: number;
   level: string; // Ex: "Pêcheur Amateur", "Légende", etc.
   last_updated: any; // Firestore Timestamp
+  age?: number; // Âge calculé (public), seulement si showAge est true
 }
 
 export interface WeatherData {
