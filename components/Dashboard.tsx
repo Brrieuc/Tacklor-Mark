@@ -48,14 +48,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 space-y-8 pb-24">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 pb-24">
       
       {/* 
          Sticky Header Area 
          Compact transition on scroll.
       */}
       <div 
-        className={`sticky top-[80px] z-50 flex flex-col md:flex-row justify-between gap-4 transition-all duration-500 ease-in-out rounded-2xl ${
+        className={`sticky top-[80px] z-50 w-full flex flex-col md:flex-row justify-between gap-4 transition-all duration-500 ease-in-out rounded-2xl ${
             isScrolled 
             ? 'bg-black/40 backdrop-blur-xl border border-white/10 px-4 py-0.5 shadow-lg items-center' 
             : 'px-2 py-2 items-end'
