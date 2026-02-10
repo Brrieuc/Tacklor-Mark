@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { NewCatchForm } from './components/NewCatchForm';
-import { CatchRecord, ViewState, Language, Theme, UserProfile, WeatherData } from './types';
+import { CatchRecord, ViewState, Language, Theme, WeatherData } from './types';
 import { translations } from './i18n';
-import { getLogbook, saveToLogbook, getUserProfile } from './services/storageService';
+import { getLogbook, saveToLogbook } from './services/storageService';
 import { fetchCurrentWeather } from './services/weatherService';
 import { CUSTOM_API_KEY_STORAGE, resetAiClient } from './services/geminiService';
+import { auth, signInWithGoogle, logoutUser } from './services/firebaseConfig';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { GlassCard } from './components/GlassCard';
 
 export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.DASHBOARD);
   
   const [catches, setCatches] = useState<CatchRecord[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   
   const [lang, setLang] = useState<Language>('fr');
   const [theme, setTheme] = useState<Theme>('dark');
@@ -25,52 +30,96 @@ export default function App() {
   // Weather State
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [locationError, setLocationError] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
 
   // Background Images
   const bgDay = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYWwMD27VB-_OQ7OrwaiBqJ-7lNELdUS4CYyrelQi_0blK4duusIiPywZlzSoLPCGjK6p0YfV55PcwkgafWvtJOi3MTmpHwYfhravhXRLRCCa2Mq0YaVfMdGTYT1tKB3whMRbQdQVt0RERB1UnOO1NepeTof4Ti7_k7GzZO53n4e3NfwuEPgXucIZPjDI/s16000/Fond%20Tropical.png';
   const bgNight = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj20dNTvoUjjdxI39uKfSeA6UnGif5MhnMkTYrdK40ly6IGTIqXrXUY6_dfFBNd5kYsi_7EeXSAyAiBAuAPTikKnyrgneFcAcX6vPoaYzJN84YlzdaTOAE19jm6ElAd2oMt3g5y37FH9eGhpsOaUQce2hhJjIwMb8cC9DiQcYRYsrxYwHlbtNyjK3MAmgk/s16000/Fond%20Nuit.png';
 
-  // Load Data & Fetch Weather on Mount
+  // 1. Initialize Auth Listener & Data Fetching
   useEffect(() => {
-    // 1. Load LocalStorage Data
-    try {
-      const loadedCatches = getLogbook();
-      const loadedProfile = getUserProfile();
-      setCatches(loadedCatches);
-      setUserProfile(loadedProfile);
-      
-      const storedKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
-      if (storedKey) setCustomKey(storedKey);
+    let unsubscribe = () => {};
 
-    } catch (error) {
-      console.error("App Component: Error loading storage", error);
-    }
+    const init = async () => {
+        // Load API Key
+        const storedKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
+        if (storedKey) setCustomKey(storedKey);
 
-    // 2. Fetch Weather
-    const initWeather = async () => {
-        const data = await fetchCurrentWeather();
-        if (data) {
-            setWeatherData(data);
+        // Fetch Weather
+        const weather = await fetchCurrentWeather();
+        if (weather) {
+            setWeatherData(weather);
             setLocationError(false);
         } else {
             setLocationError(true);
         }
-    };
-    initWeather();
 
-    // 3. Scroll Listener for Shadow
+        // Firebase Auth Listener
+        if (auth) {
+            unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                setUser(currentUser);
+                setAuthLoading(false);
+                
+                // Fetch Data based on Auth State
+                setDataLoading(true);
+                try {
+                    const data = await getLogbook(currentUser?.uid);
+                    setCatches(data);
+                } catch (err) {
+                    console.error("Error fetching initial data", err);
+                } finally {
+                    setDataLoading(false);
+                }
+            });
+        } else {
+            // Fallback for Guest Mode if Firebase fails
+            setAuthLoading(false);
+            const data = await getLogbook(null);
+            setCatches(data);
+        }
+    };
+
+    init();
+
+    // Scroll Listener
     const handleScroll = () => {
-        setIsScrolled(window.scrollY > 20);
+        const currentY = window.scrollY;
+        setIsScrolled(prevIsScrolled => {
+            const shrinkThreshold = 60;
+            const expandThreshold = 10;
+            if (!prevIsScrolled && currentY > shrinkThreshold) return true;
+            if (prevIsScrolled && currentY < expandThreshold) return false;
+            return prevIsScrolled;
+        });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        unsubscribe();
+    };
   }, []);
 
-  const handleSaveNewCatch = (record: CatchRecord) => {
-    const updatedLogbook = saveToLogbook(record);
-    setCatches(updatedLogbook);
-    setView(ViewState.DASHBOARD);
+  const handleSaveNewCatch = async (record: CatchRecord) => {
+    setDataLoading(true);
+    try {
+        const updatedLogbook = await saveToLogbook(record, user?.uid);
+        setCatches(updatedLogbook);
+        setView(ViewState.DASHBOARD);
+    } catch (e) {
+        alert("Erreur lors de la sauvegarde.");
+    } finally {
+        setDataLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+      try {
+          await signInWithGoogle();
+          // onAuthStateChanged will handle the rest
+      } catch (e) {
+          alert("Erreur de connexion Google");
+      }
   };
 
   const handleSaveApiKey = () => {
@@ -79,7 +128,7 @@ export default function App() {
       } else {
           localStorage.removeItem(CUSTOM_API_KEY_STORAGE);
       }
-      resetAiClient(); // Force reload of AI client
+      resetAiClient(); 
       setShowKeyModal(false);
   };
 
@@ -100,7 +149,7 @@ export default function App() {
       {/* Navigation Bar */}
       <nav className="sticky top-0 z-[100] px-4 sm:px-6 py-4 mb-2">
         <div className="max-w-7xl mx-auto">
-          {/* Navbar Background: Dynamic Shadow based on scroll */}
+          {/* Navbar Background */}
           <div 
             className={`
                 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between backdrop-blur-xl transition-all duration-500
@@ -114,7 +163,7 @@ export default function App() {
                  alt="Tacklor Mark" 
                  className="w-10 h-10 object-contain drop-shadow-md group-hover:scale-110 transition-transform" 
                />
-               <span className={`text-xl font-bold tracking-tight text-white ${textShadowClass}`}>{t.appTitle}</span>
+               <span className={`hidden sm:inline text-xl font-bold tracking-tight text-white ${textShadowClass}`}>{t.appTitle}</span>
             </div>
             
             <div className="flex items-center gap-3">
@@ -141,7 +190,6 @@ export default function App() {
                 )}
               </button>
 
-              {/* API Key Button Moved Here */}
               <button
                 onClick={() => setShowKeyModal(true)}
                 className={`p-1.5 rounded-full border backdrop-blur-md transition-all bg-white/20 hover:bg-white/30 border-white/30 text-white/90 ${textShadowClass}`}
@@ -151,16 +199,33 @@ export default function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
               </button>
-              
-               <div className={`hidden sm:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border text-white/80 bg-black/20 border-white/10 ${textShadowClass}`}>
-                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                 {t.aiActive}
-               </div>
                
-               {userProfile && (
-                 <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shadow-md">
-                   <img src={userProfile.avatarUrl} alt={userProfile.name} className="w-full h-full object-cover" />
+               {/* Authentication UI */}
+               {authLoading ? (
+                   <div className="w-9 h-9 rounded-full bg-white/20 animate-pulse"></div>
+               ) : user ? (
+                 <div className="relative group">
+                    <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shadow-md transition-transform hover:scale-105">
+                        <img src={user.photoURL || "https://ui-avatars.com/api/?name=" + user.displayName} alt={user.displayName || "User"} className="w-full h-full object-cover" />
+                    </button>
+                    {/* Dropdown Logout */}
+                    <div className="absolute right-0 top-full mt-2 w-32 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                        <button 
+                            onClick={logoutUser}
+                            className="w-full text-left px-4 py-2 text-xs font-bold text-white bg-red-600/90 hover:bg-red-500 rounded-lg shadow-lg backdrop-blur-md"
+                        >
+                            Déconnexion
+                        </button>
+                    </div>
                  </div>
+               ) : (
+                 <button 
+                    onClick={handleLogin}
+                    className="flex items-center gap-2 bg-white text-gray-800 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg hover:bg-gray-100 transition-colors"
+                 >
+                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="G" />
+                     <span className="hidden sm:inline">Connexion</span>
+                 </button>
                )}
             </div>
           </div>
@@ -169,6 +234,19 @@ export default function App() {
 
       {/* Main Content */}
       <main className="transition-all duration-500 ease-in-out relative z-0">
+        {/* Loading Indicator for Data */}
+        {dataLoading && (
+            <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50">
+                 <div className="bg-black/50 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 border border-white/10 shadow-xl">
+                    <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Synchronisation...
+                 </div>
+            </div>
+        )}
+
         {view === ViewState.DASHBOARD && (
           <Dashboard 
             catches={catches} 

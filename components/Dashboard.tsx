@@ -52,17 +52,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
       
       {/* 
          Sticky Header Area 
-         Optimized for Fluidity: Uses constant Flex-Row structure with max-width/opacity transitions.
+         Optimized for Fluidity: Uses Flex-Wrap to allow Title to break to new line on Mobile (Not Scrolled).
       */}
       <div 
-        className={`sticky top-[72px] sm:top-[80px] z-50 w-full flex flex-row items-center justify-between gap-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
+        className={`sticky top-[72px] sm:top-[80px] z-50 w-full flex flex-wrap md:flex-nowrap items-center justify-between gap-x-2 gap-y-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-2xl overflow-hidden ${
             isScrolled 
             ? 'bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1 shadow-lg' 
             : 'px-1 py-2 bg-transparent border-transparent'
         }`}
       >
         {/* Left Side: Title Area */}
-        <div className="flex flex-col justify-center transition-all duration-500 min-w-0 flex-shrink">
+        <div className={`flex flex-col justify-center transition-all duration-500 min-w-0 flex-shrink ${
+            isScrolled ? 'w-auto' : 'w-full md:w-auto'
+        }`}>
           <h1 className={`font-extrabold tracking-tight text-white ${textShadowClass} transition-all duration-500 whitespace-nowrap origin-left ${
               isScrolled 
               ? 'text-lg md:text-xl mb-0' 
@@ -83,7 +85,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ catches, onAddNew, lang, t
         </div>
         
         {/* Right Side: Widgets Area */}
-        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+        <div className={`flex items-center gap-2 md:gap-3 flex-shrink-0 transition-all duration-500 ${
+            isScrolled ? 'w-auto' : 'w-full md:w-auto justify-start md:justify-end'
+        }`}>
             {/* Weather Widget */}
             <GlassCard theme={theme} className={`flex items-center !rounded-full shadow-lg backdrop-blur-md transition-all duration-500 border border-white/20 ${
                 isScrolled 

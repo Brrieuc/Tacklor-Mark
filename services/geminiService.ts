@@ -3,24 +3,6 @@ import { CatchAnalysis, Language } from "../types";
 
 export const CUSTOM_API_KEY_STORAGE = 'tacklor_custom_api_key';
 
-// Fonction utilitaire sécurisée pour récupérer la clé API
-// Priorité : 1. LocalStorage (Clé utilisateur) -> 2. Process.env (Clé développeur)
-const getApiKey = () => {
-  try {
-    const customKey = localStorage.getItem(CUSTOM_API_KEY_STORAGE);
-    if (customKey) return customKey;
-
-    // @ts-ignore
-    if (typeof process !== 'undefined' && process.env) {
-      // @ts-ignore
-      return process.env.API_KEY || '';
-    }
-  } catch (e) {
-    console.warn("Environnement process.env non détecté.");
-  }
-  return '';
-};
-
 // Instance lazy-loaded pour éviter les erreurs top-level
 let aiInstance: GoogleGenAI | null = null;
 
@@ -32,11 +14,10 @@ export const resetAiClient = () => {
 const getAiClient = (): GoogleGenAI | null => {
   if (aiInstance) return aiInstance;
   
-  const key = getApiKey();
-  if (!key) return null; // Retourne null si pas de clé, géré plus bas
-
+  // @google/genai Guideline: The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+  // Assume this variable is pre-configured, valid, and accessible.
   try {
-    aiInstance = new GoogleGenAI({ apiKey: key });
+    aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
     return aiInstance;
   } catch (error) {
     console.error("Erreur lors de l'initialisation du client Gemini:", error);
@@ -68,7 +49,7 @@ export const analyzeCatchImage = async (file: File, lang: Language = 'fr'): Prom
   
   // Si le client n'est pas dispo (pas de clé ou erreur init), on utilise les données mock
   if (!ai) {
-    console.warn("Client Gemini non disponible (Clé API manquante ?). Utilisation des données de simulation.");
+    console.warn("Client Gemini non disponible. Utilisation des données de simulation.");
     await new Promise(r => setTimeout(r, 2000));
     return {
       species: lang === 'fr' ? "Bar Européen (Simulation)" : "European Bass (Mock)",

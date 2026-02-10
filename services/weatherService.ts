@@ -1,7 +1,8 @@
 import { WeatherData } from "../types";
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
-const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/reverse';
+// Service de géocodage inversé gratuit et fiable pour les noms de lieux
+const REVERSE_GEO_URL = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
 
 const getWMODescription = (code: number): string => {
   const codes: Record<number, string> = {
@@ -44,14 +45,14 @@ export const fetchCurrentWeather = async (): Promise<WeatherData | null> => {
     const weatherData = await weatherResponse.json();
     
     // 2. Fetch Location Name (Reverse Geocoding)
-    let locationName = "Position GPS";
+    // Valeur par défaut plus élégante que "Position GPS"
+    let locationName = "Ma Position";
     try {
-        const geoResponse = await fetch(`${GEOCODING_URL}?latitude=${latitude}&longitude=${longitude}&count=1&language=fr`);
+        const geoResponse = await fetch(`${REVERSE_GEO_URL}?latitude=${latitude}&longitude=${longitude}&localityLanguage=fr`);
         if (geoResponse.ok) {
             const geoData = await geoResponse.json();
-            if (geoData.results && geoData.results.length > 0) {
-                locationName = geoData.results[0].name;
-            }
+            // On cherche la ville, sinon la localité, sinon la région
+            locationName = geoData.city || geoData.locality || geoData.principalSubdivision || "Zone Côtière";
         }
     } catch (e) {
         console.warn("Geocoding failed", e);
@@ -72,7 +73,6 @@ export const fetchCurrentWeather = async (): Promise<WeatherData | null> => {
       locationName: locationName
     };
   } catch (error) {
-    // Log silencieux pour ne pas spammer la console en production si l'utilisateur refuse la geoloc
     console.warn("Météo indisponible:", error);
     return null;
   }

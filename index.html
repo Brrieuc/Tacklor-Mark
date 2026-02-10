@@ -33,12 +33,8 @@
         -webkit-font-smoothing: antialiased;
         transition: background-image 0.5s ease-in-out;
       }
-      
-      /* Utilities */
       .scrollbar-hide::-webkit-scrollbar { display: none; }
       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      
-      /* Text Shadow for better contrast on images */
       .text-shadow-sm { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
       .text-shadow-md { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     </style>
@@ -48,16 +44,16 @@
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "firebase/": "https://esm.sh/firebase@^12.9.0/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
 </head>
 <body class="antialiased min-h-screen text-gray-100 overflow-x-hidden selection:bg-blue-500/30">
-
     <div id="root"></div>
-
-    <!-- Main Entry Point -->
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

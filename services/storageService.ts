@@ -1,14 +1,11 @@
 import { CatchRecord, UserProfile } from "../types";
+import { db } from "./firebaseConfig";
+import { collection, addDoc, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 
 const LOGBOOK_KEY = 'tacklor_logbook';
 const USER_KEY = 'tacklor_user_profile';
 
 // --- Image Compression Logic ---
-
-/**
- * Compresses and converts an image file to a Base64 string suitable for LocalStorage.
- * Max dimensions: 800x800, Quality: 0.7
- */
 export const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -50,47 +47,93 @@ export const compressImage = (file: File): Promise<string> => {
   });
 };
 
-// --- Logbook Persistence ---
+// --- Hybrid Logbook Persistence (Async) ---
 
-export const getLogbook = (): CatchRecord[] => {
-  try {
-    const stored = localStorage.getItem(LOGBOOK_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (e) {
-    console.error("Failed to load logbook", e);
-    return [];
+/**
+ * Récupère le carnet de pêche.
+ * Si userId est présent, fetch depuis Firebase. Sinon, LocalStorage.
+ */
+export const getLogbook = async (userId?: string | null): Promise<CatchRecord[]> => {
+  // 1. Mode Firebase (Connecté)
+  if (userId && db) {
+      try {
+          const catchesRef = collection(db, "users", userId, "catches");
+          // Tri par date décroissante
+          const q = query(catchesRef, orderBy("date", "desc"));
+          const querySnapshot = await getDocs(q);
+          
+          const records: CatchRecord[] = [];
+          querySnapshot.forEach((doc) => {
+              // On fusionne l'ID du doc Firestore avec les données
+              records.push({ ...doc.data(), id: doc.id } as CatchRecord);
+          });
+          return records;
+      } catch (e) {
+          console.error("Erreur lecture Firestore:", e);
+          return [];
+      }
   }
+
+  // 2. Mode Invité (LocalStorage)
+  return new Promise((resolve) => {
+      try {
+        const stored = localStorage.getItem(LOGBOOK_KEY);
+        resolve(stored ? JSON.parse(stored) : []);
+      } catch (e) {
+        console.error("Failed to load local logbook", e);
+        resolve([]);
+      }
+  });
 };
 
-export const saveToLogbook = (newCatch: CatchRecord): CatchRecord[] => {
-  try {
-    const current = getLogbook();
-    const updated = [newCatch, ...current];
-    localStorage.setItem(LOGBOOK_KEY, JSON.stringify(updated));
-    return updated;
-  } catch (e) {
-    console.error("Failed to save catch - LocalStorage might be full", e);
-    alert("Erreur: Espace de stockage local saturé. Essayez de supprimer d'anciennes prises.");
-    return getLogbook();
+/**
+ * Sauvegarde une prise.
+ * Si userId est présent, addDoc vers Firebase. Sinon, LocalStorage.
+ * Retourne la liste mise à jour.
+ */
+export const saveToLogbook = async (newCatch: CatchRecord, userId?: string | null): Promise<CatchRecord[]> => {
+  // 1. Mode Firebase (Connecté)
+  if (userId && db) {
+      try {
+          const catchesRef = collection(db, "users", userId, "catches");
+          // On supprime l'ID généré localement pour laisser Firestore gérer l'ID, 
+          // ou on l'utilise si on veut forcer l'ID (ici on laisse Firestore faire mais on garde la structure)
+          // Note: Firestore stocke les dates complexes, on s'assure que c'est une string ISO pour compatibilité UI
+          await addDoc(catchesRef, newCatch);
+          
+          // On re-fetch pour avoir la liste à jour et synchronisée
+          return await getLogbook(userId);
+      } catch (e) {
+          console.error("Erreur écriture Firestore:", e);
+          throw e;
+      }
   }
+
+  // 2. Mode Invité (LocalStorage)
+  return new Promise((resolve) => {
+      try {
+        const currentStored = localStorage.getItem(LOGBOOK_KEY);
+        const current = currentStored ? JSON.parse(currentStored) : [];
+        const updated = [newCatch, ...current];
+        localStorage.setItem(LOGBOOK_KEY, JSON.stringify(updated));
+        resolve(updated);
+      } catch (e) {
+        console.error("LocalStorage error", e);
+        // En cas d'erreur (quota), on renvoie ce qu'on a
+        const stored = localStorage.getItem(LOGBOOK_KEY);
+        resolve(stored ? JSON.parse(stored) : []);
+      }
+  });
 };
 
-// --- User Profile Persistence ---
+// --- User Profile Persistence (LocalStorage only for Guest UI prefs) ---
+// Le profil Firebase (photo/nom) est géré directement via l'objet User Auth dans App.tsx
 
-const DEFAULT_USER: UserProfile = {
-  name: "Pêcheur",
-  avatarUrl: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png" // Fallback logo
-};
-
-export const getUserProfile = (): UserProfile => {
+export const getLocalUserProfile = (): UserProfile => {
   try {
     const stored = localStorage.getItem(USER_KEY);
-    return stored ? JSON.parse(stored) : DEFAULT_USER;
+    return stored ? JSON.parse(stored) : { name: "Invité", avatarUrl: "" };
   } catch (e) {
-    return DEFAULT_USER;
+    return { name: "Invité", avatarUrl: "" };
   }
-};
-
-export const saveUserProfile = (profile: UserProfile): void => {
-  localStorage.setItem(USER_KEY, JSON.stringify(profile));
 };
