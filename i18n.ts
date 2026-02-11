@@ -22,8 +22,6 @@ export const translations = {
         pending: "Pending Check",
         compliant: "Compliant", // Will be hidden in UI
         to_declare: "Action Required",
-        legal_declaration_required: "RecFishing Declaration Required",
-        legal_declaration_validated: "RecFishing Validated"
       },
       labels: {
         length: "Length",
@@ -227,8 +225,6 @@ export const translations = {
         pending: "En attente",
         compliant: "Conforme", // Masqué dans l'UI
         to_declare: "À déclarer",
-        legal_declaration_required: "Déclaration RecFishing requise",
-        legal_declaration_validated: "RecFishing validé"
       },
       labels: {
         length: "Taille",

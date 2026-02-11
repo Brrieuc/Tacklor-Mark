@@ -7,86 +7,32 @@ export interface ProcessingResult {
   advice: string;
 }
 
-type Zone = 'MED' | 'ATL' | 'UNKNOWN';
-
-/**
- * Détermine la zone de pêche basée sur les coordonnées GPS.
- * Approximation simplifiée pour le MVP :
- * Méditerranée : Lat < 43.5 ET Lon > 2.0 (Approximation grossière Sud-Est France)
- * Atlantique/Manche/Mer du Nord (ICES 7 & 8) : Le reste.
- */
-const determineFishingZone = (lat?: number, lon?: number): Zone => {
-  if (!lat || !lon) return 'UNKNOWN'; // Par défaut, on appliquera le principe de précaution
-  
-  if (lat < 43.5 && lon > 2.0) {
-    return 'MED';
-  }
-  return 'ATL';
-};
-
 /**
  * Logic Controller: Processes fishing data to determine compliance and generate advice.
- * Updates based on 2026 Regulations from mer.gouv.fr
+ * SIMPLIFIED VERSION: Checks only basic size limits and sensitive flag.
  */
 export const processFishingData = async (catchData: Partial<CatchRecord>, lang: Language = 'fr'): Promise<ProcessingResult> => {
   // Simulate API latency
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   const t = translations[lang].form.messages;
   let status: CatchRecord['complianceStatus'] = 'compliant';
   let message = t.compliant;
   
   const speciesLower = catchData.species?.toLowerCase() || "";
+
+  // --- REGLES SIMPLIFIÉES ---
   
-  // Récupération des données Géo via le weatherSnapshot inclus dans catchData
-  const lat = catchData.weatherSnapshot?.lat;
-  const lon = catchData.weatherSnapshot?.lon;
-  const zone = determineFishingZone(lat, lon);
-
-  // --- MATRICE DE RÉGLEMENTATION 2026 ---
-  // Déclaration obligatoire RecFishing (CERFA) uniquement pour ces cas précis.
-  let declarationRequired = false;
-
-  // 1. Thon Rouge (Toutes zones)
-  if (speciesLower.includes('thon rouge') || speciesLower.includes('bluefin')) {
-    declarationRequired = true;
+  // 1. Espèce sensible (cochée manuellement ou détectée via logique métier future)
+  if (catchData.is_sensitive_species) {
+    status = 'to_declare';
+    message = t.sensitive;
   }
-  
-  // 2. Bar / Loup (Atlantique/Manche uniquement - Zones CIEM 7&8)
-  else if ((speciesLower.includes('bar') || speciesLower.includes('loup') || speciesLower.includes('bass')) && zone !== 'MED') {
-    declarationRequired = true;
-  }
-
-  // 3. Lieu Jaune (Atlantique/Manche uniquement - Zones CIEM 7&8)
-  else if ((speciesLower.includes('lieu jaune') || speciesLower.includes('pollock')) && zone !== 'MED') {
-    declarationRequired = true;
-  }
-
-  // 4. Dorade Rose (Zones 7, 8 & Méditerranée -> Partout en France)
-  else if (speciesLower.includes('dorade rose') || speciesLower.includes('red seabream') || speciesLower.includes('pagellus')) {
-    declarationRequired = true;
-  }
-
-  // 5. Dorade Coryphène (Méditerranée uniquement)
-  else if ((speciesLower.includes('coryphène') || speciesLower.includes('mahi')) && zone === 'MED') {
-    declarationRequired = true;
-  }
-
-  // --- APPLICATION DU STATUT ---
-
-  if (declarationRequired) {
-    status = 'legal_declaration_required';
-    message = t.legal_required;
-  } 
-  // Règle générale taille (sauf si déjà flaggué "legal")
+  // 2. Vérification générique de taille minimale (Règle simple < 20cm pour l'exemple global)
+  // Dans une version complète, cela utiliserait SPECIES_DB
   else if ((catchData.length_cm || 0) < 20) {
      status = 'to_declare';
      message = t.undersize;
-  }
-  // Espèce sensible générique (si cochée manuellement par l'utilisateur)
-  else if (catchData.is_sensitive_species) {
-    status = 'to_declare';
-    message = t.sensitive;
   }
 
   // --- TACKLOR GUIDE AI ADVICE (Simulation) ---

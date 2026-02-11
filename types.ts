@@ -12,7 +12,7 @@ export interface CatchRecord extends CatchAnalysis {
   id: string;
   date: string;
   imageUrl: string; // Stockera désormais une chaîne Base64 compressée
-  complianceStatus: 'pending' | 'compliant' | 'to_declare' | 'legal_declaration_required' | 'legal_declaration_validated';
+  complianceStatus: 'pending' | 'compliant' | 'to_declare'; // Statuts simplifiés
   location?: string;
   aiAdvice?: string; // Conseil du Tacklor Guide AI
   weatherSnapshot?: WeatherData; // Données météo Open-Meteo au moment de la prise

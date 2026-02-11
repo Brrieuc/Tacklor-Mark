@@ -66,9 +66,6 @@ const SPECIES_DB: SpeciesData[] = [
 // Image par défaut si aucune photo n'est fournie (Pattern subtil ou logo)
 const DEFAULT_IMAGE = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1ebB7GZWegRbYq-_RKqU2d8qHqK0m6asNfhQDg5nEdQnwPE9X-duj2FXOEcxa0jBMRdQqH_jWzYOdGGlxUNqv21wqVk_15n5kAAqdcqB9X6JX1B5qeKL0gzGE_hy4o1LzM4MA0_o3k0sEfk2ZawNhyz6efj9QoU4u8xcpJkljzhFQYwChLXUrp4ya9LA/s320/Logo%20Tacklor%20Mark.png";
 
-// Clé de stockage pour le brouillon
-const DRAFT_STORAGE_KEY = 'tacklor_catch_draft';
-
 export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, lang, theme, weather, initialData }) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl || null);
@@ -114,47 +111,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = translations[lang].form;
 
-  // --- DRAFT RESTORATION LOGIC ---
-  useEffect(() => {
-    // Si on n'est PAS en mode édition (création pure), on vérifie s'il y a un brouillon
-    if (!isEditMode) {
-      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (savedDraft) {
-        try {
-          const parsed = JSON.parse(savedDraft);
-          // On restaure les données UNIQUEMENT si elles existent pour éviter d'écraser le state avec undefined
-          if (parsed && parsed.formData) {
-              setFormData(parsed.formData);
-              if (parsed.complianceStatus) setComplianceStatus(parsed.complianceStatus);
-              if (parsed.location) setLocation(parsed.location);
-              if (parsed.aiAdvice) setAiAdvice(parsed.aiAdvice);
-              if (parsed.catchDate) setCatchDate(parsed.catchDate);
-          }
-        } catch (e) {
-          console.error("Failed to parse draft", e);
-          // Nettoyage préventif
-          localStorage.removeItem(DRAFT_STORAGE_KEY);
-        }
-      }
-    }
-  }, [isEditMode]);
-
-  // Sauvegarde manuelle du brouillon (appelée avant de quitter vers le lien externe)
-  const saveDraftToStorage = (overrideStatus?: CatchRecord['complianceStatus']) => {
-    const draft = {
-        formData,
-        complianceStatus: overrideStatus || complianceStatus,
-        location,
-        aiAdvice,
-        catchDate
-    };
-    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-  };
-
-  const clearDraft = () => {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
-  };
-  
   // Style harmonisé
   const textShadowClass = "drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]";
   const labelClass = `text-white/80 font-semibold ${textShadowClass}`;
@@ -254,13 +210,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
 
       const result: ProcessingResult = await processFishingData(enrichedData, lang);
       
-      // Si l'utilisateur a déjà validé, on ne revient pas en arrière automatiquement
-      if (complianceStatus === 'legal_declaration_validated' && result.status !== 'compliant') {
-          setComplianceMessage(result.message);
-      } else {
-          setComplianceStatus(result.status);
-          setComplianceMessage(result.message);
-      }
+      setComplianceStatus(result.status);
+      setComplianceMessage(result.message);
       
       if ((!aiAdvice || isAnalyzing) && !isEditMode) {
           setAiAdvice(result.advice);
@@ -272,18 +223,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
     } finally {
       setIsSyncing(false);
     }
-  };
-
-  // Gestion du clic sur le lien externe
-  const handleLegalLinkClick = (e: React.MouseEvent) => {
-     // 1. Mettre à jour l'état local immédiatement
-     const newStatus = 'legal_declaration_validated';
-     setComplianceStatus(newStatus);
-     
-     // 2. Sauvegarder dans le localStorage pour persistance si l'onglet reload
-     saveDraftToStorage(newStatus);
-
-     // L'événement suit son cours (ouverture du lien _blank)
   };
 
   const handleSave = async () => {
@@ -317,7 +256,6 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
           weatherSnapshot: initialData?.weatherSnapshot || weather || undefined 
         };
         onSave(recordToSave);
-        clearDraft(); // Nettoyage après succès
     } catch (error) {
         console.error("Error preparing save:", error);
         alert("Erreur lors de la sauvegarde.");
@@ -326,13 +264,8 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
   };
 
   const handleCancel = () => {
-      clearDraft();
       onCancel();
   };
-
-  const isRequired = complianceStatus === 'legal_declaration_required';
-  const isValidated = complianceStatus === 'legal_declaration_validated';
-  const showLegalAlert = isRequired || isValidated;
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 pb-20">
@@ -531,7 +464,7 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                   </div>
              </div>
 
-            {/* RecFishing Compliance Check - REDUCED UI */}
+            {/* RecFishing Compliance Check - SIMPLIFIED UI */}
             <div className={`border-t pt-6 border-white/20`}>
               {/* Entête */}
               <div className="flex items-center justify-between gap-4">
@@ -559,52 +492,17 @@ export const NewCatchForm: React.FC<NewCatchFormProps> = ({ onSave, onCancel, la
                                 ⚠️ {t.compliance.actionRequired}
                             </div>
                         )}
-                        {isRequired && (
-                            <div className="text-purple-300 font-bold bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/50 animate-pulse">
-                                ⚖️ {t.compliance.actionRequired}
-                            </div>
-                        )}
-                        {isValidated && (
-                            <div className="flex items-center gap-2 text-green-300 font-bold bg-green-500/20 px-3 py-1 rounded-full border border-green-500/50">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                {t.status.legal_declaration_validated}
-                            </div>
-                        )}
                     </>
                  )}
               </div>
               
-              {/* Alert Message Box - Only show if Not Compliant or Validated */}
+              {/* Alert Message Box - Only show if Not Compliant */}
               {(complianceMessage && complianceStatus !== 'compliant') && (
-                  <div className={`mt-4 p-4 rounded-xl border flex flex-col gap-3 ${
-                      isValidated 
-                      ? 'bg-green-900/40 border-green-500/50 text-white'
-                      : showLegalAlert 
-                        ? 'bg-purple-900/40 border-purple-500/50 text-white' 
-                        : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-100'
-                  }`}>
+                  <div className={`mt-4 p-4 rounded-xl border flex flex-col gap-3 bg-yellow-900/20 border-yellow-500/30 text-yellow-100`}>
                       <div className="flex items-start gap-3">
-                          <span className="text-2xl">{isValidated ? '✅' : showLegalAlert ? '🚨' : '⚠️'}</span>
+                          <span className="text-2xl">⚠️</span>
                           <p className="text-sm font-medium pt-1">{complianceMessage}</p>
                       </div>
-
-                      {/* Specific Legal Button - ONLY if required */}
-                      {isRequired && (
-                        <a 
-                            href="https://www.mer.gouv.fr/peche-de-loisir-declaration-de-captures" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            onClick={handleLegalLinkClick}
-                            className="w-full mt-2 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg text-center transition-all border border-white/20 flex items-center justify-center gap-2"
-                        >
-                            <span>Remplir ma déclaration (CERFA)</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                      )}
                   </div>
               )}
             </div>

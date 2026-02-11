@@ -37,9 +37,7 @@ const StatusBadge: React.FC<{ status: CatchRecord['complianceStatus']; lang: Lan
   const colors = {
     pending: 'bg-yellow-500/90 text-black border-yellow-600',
     compliant: '', // Hidden
-    to_declare: 'bg-red-500/90 text-white border-red-600',
-    legal_declaration_required: 'bg-purple-600/90 text-white border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse', // Very visible
-    legal_declaration_validated: 'bg-green-600/90 text-white border-green-400 shadow-sm' // Validation confirmed
+    to_declare: 'bg-red-500/90 text-white border-red-600', // Now serves as "Warning / Check Required"
   };
 
   return (

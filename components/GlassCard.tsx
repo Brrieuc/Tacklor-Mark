@@ -1,3 +1,4 @@
+
 import React, { ReactNode } from 'react';
 import { Theme } from '../types';
 
@@ -5,9 +6,10 @@ interface GlassCardProps {
   children: ReactNode;
   className?: string;
   theme?: Theme; 
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
-export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', theme = 'dark' }) => {
+export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', theme = 'dark', onClick }) => {
   const isDark = theme === 'dark';
 
   // Fond assombri pour les deux modes afin de garantir la lisibilité du texte blanc
@@ -19,7 +21,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', 
     : 'bg-black/20 backdrop-blur-xl border border-white/20 text-white shadow-xl';
 
   return (
-    <div className={`${baseClasses} rounded-3xl p-6 transition-all duration-300 ${className}`}>
+    <div 
+      className={`${baseClasses} rounded-3xl p-6 transition-all duration-300 ${className}`}
+      onClick={onClick}
+    >
       {children}
     </div>
   );
